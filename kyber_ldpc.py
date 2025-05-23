@@ -1,4 +1,5 @@
 import os
+import pickle
 import random
 import sys
 import time
@@ -12,6 +13,7 @@ sys.path.append("../SCA-LDPC/simulate-with-python")
 from simulate.kyber import sample_secret_coefs, secret_distribution
 from simulate.max_likelihood import (
     SimpleOracle,
+    s_distribution_for_all_y,
     s_distribution_from_hard_y,
 )
 from simulate_rs import DecoderKyberB2SW2, DecoderKyberB2SW4
@@ -49,6 +51,25 @@ def transform_check_split(configuration, database):
         )
         check_splits.append((z_values_arr, thresholds))
     return check_splits
+
+
+# from a list of a joint pmf for each possible y compute a list of marginal pmfs for each variable
+def marginal_pmfs(cond_prob_all, weight):
+    y_len = len(cond_prob_all)
+    s_marj_cond = np.zeros((y_len, weight, (2 * ETA + 1)), dtype=np.float32)
+    for y in range(y_len):
+        for j, s in enumerate(secret_joint_range(ETA, weight=weight)):
+            for s_idx in range(weight):
+                s_val = s[s_idx]
+                s_marj_cond[y][s_idx][s_val + ETA] += cond_prob_all[y][j]
+    return s_marj_cond
+
+
+def bit_tuple_to_int(t):
+    res = 0
+    for bit in t:
+        res = (res << 1) | bit
+    return res
 
 
 def ldpc_decode(
@@ -112,15 +133,15 @@ database_4_full = eval(
     open(os.path.join(database_dir, "database_4_full.txt"), "rt").read()
 )
 full_rotation_split = transform_check_split(
-    # ([25, 149, 543, 45, 312, 30, 4], [3, 4, 2, 1, 3, 4, 6]),
-    ([523, 201, 465, 25, 149, 543, 45, 312, 30, 4], [1, 5, 0, 3, 4, 2, 1, 3, 4, 6]),
+    ([25, 149, 543, 45, 312, 30, 4], [3, 4, 2, 1, 3, 4, 6]),
+    # ([523, 201, 465, 25, 149, 543, 45, 312, 30, 4], [1, 5, 0, 3, 4, 2, 1, 3, 4, 6]),
     database_4_full,
 )
 oracle_configurations.append((full_rotation_checks, full_rotation_split))
 
 # within_block_checks = []
 # for block_idx in range(k):
-#     for step in [3, 11, 19, 31, 53, 79]:
+#     for step in [3, 11, 19]:
 #         # TODO: end of block is left uncovered
 #         steps_total = n // (step * joint_weight)
 #         for step_idx in range(steps_total):
@@ -130,6 +151,25 @@ oracle_configurations.append((full_rotation_checks, full_rotation_split))
 #                 check = tuple(start + i * step for i in range(joint_weight))
 #                 within_block_checks.append(check)
 # database_4_3 = eval(open(os.path.join(database_dir, "database_4_3.txt"), "rt").read())
+# within_block_split = transform_check_split(
+#     ([38], [1]),
+#     database_4_3,
+# )
+# oracle_configurations.append((within_block_checks, within_block_split))
+
+# between_block_checks = []
+# # for block_idx in range(k):
+# #     # for step in [3, 11, 19, 31, 53, 79]:
+# #     for step in [3, 11, 31]:
+# #         # TODO: end of block is left uncovered
+# #         steps_total = n // (step * joint_weight)
+# #         for step_idx in range(steps_total):
+# #             start_step_block = step_idx * step * joint_weight + n * block_idx
+# #             for step_offset in range(step):
+# #                 start = start_step_block + step_offset
+# #                 check = tuple(start + i * step for i in range(joint_weight))
+# #                 within_block_checks.append(check)
+# database_4_4 = eval(open(os.path.join(database_dir, "database_4_3.txt"), "rt").read())
 # within_block_split = transform_check_split(
 #     ([440, 202, 82], [3, 0, 3]),
 #     database_4_3,
@@ -159,6 +199,8 @@ for key_idx in range(test_keys):
     check_variables = []
     oracle_calls = 0
 
+    sk_decoded_marginals = [0] * sk_len
+
     for checks, split in oracle_configurations:
         all_checks.extend(checks)
         encoding_time_start = time.perf_counter()
@@ -171,6 +213,15 @@ for key_idx in range(test_keys):
         time_encoding += time.perf_counter() - encoding_time_start
         # TODO: rotate or modify encodings?
 
+        if p == 0.95 and len(split) == 7:
+            with open("cond_prob_all_y_095_7bits", "rb") as f:
+                all_y_pmf, pr_y = pickle.load(f)
+        else:
+            all_y_pmf, pr_y = s_distribution_for_all_y(
+                pr_oracle, check_encoding, joint_pmf
+            )
+        s_marginals = marginal_pmfs(all_y_pmf, joint_weight)
+
         cond_pr_start = time.perf_counter()
         for check_idxs in checks:
             enc_idx = 0
@@ -178,12 +229,11 @@ for key_idx in range(test_keys):
                 enc_idx = enc_idx * coef_support_size + (sk[var_idx] + ETA)
             x = check_encoding[enc_idx]
             y = sample_coef_static(x, pr_oracle)
-
-            cond_pr = s_distribution_from_hard_y(
-                y, pr_oracle, check_encoding, joint_pmf
-            )
-            # print(f"{cond_pr=}")
+            y_idx = bit_tuple_to_int(y)
+            cond_pr = all_y_pmf[y_idx]
             check_variables.append(cond_pr)
+            for i, var_idx in enumerate(check_idxs):
+                sk_decoded_marginals[var_idx] = s_marginals[y_idx][i]
         time_cond_pr += time.perf_counter() - cond_pr_start
 
     ldpc_start = time.perf_counter()
@@ -194,11 +244,18 @@ for key_idx in range(test_keys):
     time_ldpc += time.perf_counter() - ldpc_start
     # print(f"{sk=}")
     # print(f"{sk_decoded=}")
+
+    def list_small_str(lst, precision=3):
+        lst_str = ", ".join(f"{val:.{precision}f}" for val in lst)
+        return "[" + lst_str + "]"
+
     differences = 0
     for i, (expect, actual_pmf) in enumerate(zip(sk, sk_decoded)):
         actual = np.argmax(actual_pmf) - ETA
+        print(
+            f"{i}: {expect=}, {actual=}, {list_small_str(actual_pmf)}, {list_small_str(sk_decoded_marginals[i])}"
+        )
         if expect != actual:
-            print(f"{i}: {expect=}, {actual=}, {actual_pmf}")
             differences += 1
     differences_arr.append(differences)
 
