@@ -9,6 +9,9 @@ import numpy as np
 # ETA = 3
 # block_len = 256
 # num_blocks = 2
+# du = 10
+# dv = 4
+# SMALLEST_THRESHOLD = 208
 
 # Kyber-768 params
 Q = 3329
@@ -17,12 +20,17 @@ block_len = 256
 num_blocks = 3
 du = 10
 dv = 4
+SMALLEST_THRESHOLD = 208
 
 # Kyber-1024 params
 # Q = 3329
 # ETA = 2
 # block_len = 256
 # num_blocks = 4
+# du = 11
+# dv = 5
+# SMALLEST_THRESHOLD = 104
+
 
 n = block_len
 k = num_blocks
@@ -35,9 +43,9 @@ def binomial(n, k):
 
 def entropy(distr):
     if type(distr) is dict or type(distr) is defaultdict:
-        return -sum(p * log(p, 2) for p in distr.values() if p != 0)
+        return -sum(p * log(p, 2) for p in distr.values() if p > 0)
     else:
-        return -sum(p * log(p, 2) for p in distr if p != 0)
+        return -sum(p * log(p, 2) for p in distr if p > 0)
 
 
 def secret_distribution(eta, weight=1):
@@ -97,6 +105,13 @@ def decompress(x, d):
     return round((Q / 2**d) * x)
 
 
+def center(x):
+    """
+    Map each entry of x into the symmetric range (-q/2, q/2].
+    """
+    return (x + Q // 2) % Q - Q // 2
+
+
 v_values = {}
 vprimes = set()
 vprimeprimes = set()
@@ -125,7 +140,8 @@ for u in range(Q):
 # B = len(s_range) // 2
 B = ETA
 oracle_threshold = Q // 4
-k_step = Q // 16
+Z_BOUND = oracle_threshold // ETA
+k_step = SMALLEST_THRESHOLD
 potential_z_coefs = sorted(z for z in uprimeprimes if z * B <= oracle_threshold)
 
 

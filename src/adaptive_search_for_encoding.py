@@ -44,11 +44,42 @@ def precompute_mask_and_directions(first_z, s_bound, joint_weight):
     return mask, Z
 
 
-def most_promising_direction(mask, Z, pmfs):
-    joint_pmf = reduce(np.multiply.outer, pmfs).ravel()
+def efficient_joint_pmfs(pmfs):
+    # return np.einsum("i,j,k,l->ijkl", *pmfs).ravel()
+    return reduce(np.multiply.outer, pmfs).ravel()
+
+
+def most_promising_direction(mask, Z, joint_pmf):
     probs = mask @ joint_pmf
-    best_pr, best_z = min(zip(probs, Z), key=lambda x: abs(x[0] - 0.5))
-    return best_pr, best_z
+    best_pr_idx = abs(probs - 0.5).argmin()
+    best_pr = probs[best_pr_idx]
+    best_z = Z[best_pr_idx]
+    return best_pr, best_z, mask[best_pr_idx]
+
+
+def most_promising_two_directions(mask, Z, joint_pmf):
+    M = mask * joint_pmf
+    probs = M.sum(axis=1)
+    best_pr_idx = abs(probs - 0.5).argmin()
+    # (greedily) looking for second direction that gives good distribution
+    # together with the best one
+    best_pr_distr = M[best_pr_idx]
+    # leave only probabilities when both encodings give 1; looking at all directions
+    p11 = mask @ best_pr_distr
+    p10 = (1 - mask) @ best_pr_distr
+    p01 = mask @ ((1 - mask[best_pr_idx]) * joint_pmf)
+    p00 = 1 - p11 - p10 - p01
+    second_best_idx = (
+        abs(p00 - 0.25) + abs(p01 - 0.25) + abs(p10 - 0.25) + abs(p11 - 0.25)
+    ).argmin()
+    best_pr = (
+        p00[second_best_idx],
+        p01[second_best_idx],
+        p10[second_best_idx],
+        p11[second_best_idx],
+    )
+    best_z = (Z[best_pr_idx], Z[second_best_idx])
+    return best_pr, best_z, np.column_stack((mask[best_pr_idx], mask[second_best_idx]))
 
 
 def MILP_create_model(threshold, joint_weight):
@@ -126,3 +157,52 @@ def MILP_run_model(model, handles, joint_pmf):
     else:
         print("Model did not reach optimality. Status code:", model.Status)
         return None, None
+
+
+def pmf_mean(pmf):
+    return float(np.dot(pmf, range(-ETA, ETA + 1)))
+
+
+def classify_pmf(
+    pmf: np.ndarray,
+    certain_thr: float = 0.80,
+    dual_thr: float = 0.80,
+    dual_certain_thr: float = 0.60,
+    entropy_thr: float = 1.00,
+    mean_band: float = 0.50,
+):
+    """
+    Return a symbolic label describing the pmf.
+    Adjust the four thresholds to taste.
+    """
+    # ---- basic numbers -------------------------------------------------
+    sorted_p = sorted(enumerate(pmf), key=lambda x: x[1], reverse=True)
+    max_idx, max_pr = sorted_p[0]
+    max_val = max_idx - ETA
+
+    second_idx, second_pr = sorted_p[1]
+    second_val = second_idx - ETA
+
+    mean = pmf_mean(pmf)
+    # Shannon entropy in bits (ignore zero entries to avoid log(0))
+    entropy = -float(sum(p * np.log2(p) for p in pmf if p > 0))
+    # entropy = -float((p[p > 0] * np.log2(p[p > 0])).sum())
+
+    # ---- hierarchy of rules -------------------------------------------
+    if max_pr >= certain_thr:
+        return ("CERT", max_val)
+
+    if max_pr + second_pr >= dual_thr and abs(max_idx - second_idx) == 1:
+        if max_pr >= dual_certain_thr:
+            return ("DUAL", max_val, second_val)
+        else:
+            return ("DUAL_UNCERT", max_val, second_val)
+
+    # broad / narrow cut based on entropy
+    spread = "NARROW" if entropy < entropy_thr else "BROAD"
+
+    if mean < -mean_band:
+        return (spread, "NEG")
+    if mean > mean_band:
+        return (spread, "POS")
+    return (spread, "ZERO")
