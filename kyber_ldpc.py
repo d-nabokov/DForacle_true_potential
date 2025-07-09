@@ -215,6 +215,7 @@ p = 0.95
 pr_oracle = SimpleOracle(p)
 
 sk_len = n * k
+assert sk_len == 768, "Need to add support for other parameter sets"
 
 joint_weight = 4
 prob_s = secret_distribution(ETA)
@@ -226,7 +227,7 @@ s_prior = list(list(prob_s.values()) for _ in range(sk_len))
 secret_variables = np.array(s_prior, dtype=np.float32)
 
 
-database_dir = "database_10000_ordered"
+database_dir = "database_10000_768"
 
 oracle_configurations = []
 
