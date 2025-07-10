@@ -293,17 +293,23 @@ def split_from_canonical(z_values, enabled, signs, thresholds, shift):
     return z_values_arr, thresholds
 
 
-def transform_check_split(configuration, database):
-    check_splits_with_idxs = list(zip(*configuration))
+def inequalities_to_split(inequalities):
     check_splits = []
+    for z_values, thresholds, enabled, signs in inequalities:
+        z_values_arr = build_z_values_arr(z_values, enabled, signs)
+        check_splits.append((z_values_arr, thresholds))
+    return check_splits
+
+
+def get_inequalities(configuration, database):
+    check_splits_with_idxs = list(zip(*configuration))
+    inequalities = []
     for database_idx, shift in check_splits_with_idxs:
         canon_split = database[database_idx]
         z_values, thresholds, enabled, signs, _ = canon_split
-        z_values_arr, thresholds = split_from_canonical(
-            z_values, enabled, signs, thresholds, shift
-        )
-        check_splits.append((z_values_arr, thresholds))
-    return check_splits
+        z_values = anticyclic_shift_multi(z_values, shift)
+        inequalities.append((z_values, thresholds, enabled, signs))
+    return inequalities
 
 
 # from a list of a joint pmf for each possible y compute a list of marginal pmfs for each variable

