@@ -504,7 +504,6 @@ for key_idx in range(test_keys):
     for batch_no in range(additional_batches):
         if cfg.print_intermediate_info:
             print(f"{batch_no=}")
-        # print("Starting adaptively adding new checks")
         if cfg.use_random_shuffle:
             checks = list(range(sk_len))
             random.shuffle(checks)
@@ -517,19 +516,12 @@ for key_idx in range(test_keys):
                 batch_no * batch_checks_num : (batch_no + 1) * batch_checks_num
             ]
 
-        # shuffled_marginals = list(sk_decoded_marginals[i] for i in checks)
         for check_idxs in checks:
-            # for i in range(0, sk_len, joint_weight):
             check_idxs = sorted(check_idxs)
             pmfs = list(sk_decoded_marginals[i] for i in check_idxs)
             pmfs_entropy = list(map(entropy, pmfs))
             if sum(pmfs_entropy) < cfg.entropy_threshold:
                 continue
-            labels = list(classify_pmf(pmf) for pmf in pmfs)
-            # can do sorting for determining configuration, but LDPC has to have sorted indices
-            # labels, pmfs, check_idxs = map(
-            #     list, zip(*sorted(zip(labels, pmfs, check), key=lambda x: x[0]))
-            # )
             # record the checks for LDPC
             all_checks.append(check_idxs)
             joint_pmf_conditional = efficient_joint_pmfs(pmfs)
@@ -556,6 +548,7 @@ for key_idx in range(test_keys):
             pr, z_values, encoding = most_promising_direction(
                 mask, Z, joint_pmf_conditional
             )
+            threshold = 0
             # arbitrary value, but try to improve the result if we are too far from 0.5
             if cfg.use_non_zero_inequality and abs(pr - 0.5) > 0.05:
                 # TODO: can only consider indices where probs > 0.5 since we can only decrease
@@ -572,35 +565,37 @@ for key_idx in range(test_keys):
                     pr = pr_t
                     z_values = z_new
                     encoding = mask_t[best_pr_idx]
+                    threshold = 1
                 elif cfg.print_intermediate_info:
                     print(
                         f"{pr:.4f} stays unimproved with non-zero inequality, best new = {pr_t}"
                     )
 
-                # best_z = Z[best_pr_idx]
-                # return best_pr, best_z, mask[best_pr_idx], probs
             time_direction_enumeration += time.perf_counter_ns() - t0
             # lost_information += abs(pr - 0.5)
 
-            enc_idx = 0
-            for var_idx in check_idxs:
-                enc_idx = enc_idx * coef_support_size + (sk[var_idx] + ETA)
-            x = encoding[enc_idx]
-            y = pr_oracle.predict_bit(x, 0)
+            if cfg.simulate_oracle:
+                enc_idx = 0
+                for var_idx in check_idxs:
+                    enc_idx = enc_idx * coef_support_size + (sk[var_idx] + ETA)
+                x = encoding[enc_idx]
+                y = pr_oracle.predict_bit(x, 0)
+            else:
+                ct = build_arbitrary_combination_ciphertext(
+                    z_values,
+                    threshold,
+                    oracle.target_addr,
+                    oracle.rand_mask,
+                    check_idxs,
+                )
+                y = oracle.query(ct)
             y_statistic[y] += 1
-            # Here should call s_distribution_from_hard_y, but since
-            # the encoding is only 1 bit, don't want to do conversions
-            # in order to call this function, so, we just compute it
-            # by ourselves
-            # posterior_pmf = (
-            #     np.array([pr_oracle.prob_of(x_i, y, 0) for x_i in encoding]) * joint_pmf
-            # )
-            # posterior_pmf /= sum(posterior_pmf)
             channel_pmf = np.array(list(pr_oracle.prob_of(x, y, 0) for x in encoding))
             channel_pmf /= sum(channel_pmf)
             check_variables.append(channel_pmf)
 
             if cfg.print_intermediate_info:
+                labels = list(classify_pmf(pmf) for pmf in pmfs)
                 decreasing_pr = sorted(joint_pmf_conditional, reverse=True)
                 # if batch_no == 1:
                 ### regex:: taking indices \[.*170.*\];
@@ -744,11 +739,24 @@ for key_idx in range(test_keys):
                 mask, Z, joint_pmf_conditional
             )
 
-            enc_idx = 0
-            for var_idx in check_idxs:
-                enc_idx = enc_idx * coef_support_size + (sk[var_idx] + ETA)
-            x = encoding[enc_idx]
-            y = sample_coef_static(x, pr_oracle)
+            if cfg.simulate_oracle:
+                enc_idx = 0
+                for var_idx in check_idxs:
+                    enc_idx = enc_idx * coef_support_size + (sk[var_idx] + ETA)
+                x = encoding[enc_idx]
+                y = sample_coef_static(x, pr_oracle)
+            else:
+                y = []
+                for z_values in z_values_arr:
+                    ct = build_arbitrary_combination_ciphertext(
+                        z_values,
+                        0,
+                        oracle.target_addr,
+                        oracle.rand_mask,
+                        check_idxs,
+                    )
+                    response = oracle.query(ct)
+                    y.append(response)
             for y_val in y:
                 y_statistic[y_val] += 1
 
