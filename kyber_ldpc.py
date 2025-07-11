@@ -467,12 +467,14 @@ for key_idx in range(test_keys):
                 z_values, thresholds, enabled, signs = inequality
                 ct = build_full_rotate_ciphertext(
                     z_values,
+                    joint_weight,
                     thresholds,
                     enabled,
                     signs,
-                    oracle.target_addr,
-                    oracle.rand_mask,
-                    check_idxs[0],
+                    SMALLEST_THRESHOLD,
+                    check_idxs[0] // n,
+                    check_idxs[0] % n,
+                    oracle,
                 )
                 response = oracle.query(ct)
                 y.append(response)
@@ -583,10 +585,11 @@ for key_idx in range(test_keys):
             else:
                 ct = build_arbitrary_combination_ciphertext(
                     z_values,
+                    joint_weight,
                     threshold,
-                    oracle.target_addr,
-                    oracle.rand_mask,
+                    SMALLEST_THRESHOLD,
                     check_idxs,
+                    oracle,
                 )
                 y = oracle.query(ct)
             y_statistic[y] += 1
@@ -750,10 +753,11 @@ for key_idx in range(test_keys):
                 for z_values in z_values_arr:
                     ct = build_arbitrary_combination_ciphertext(
                         z_values,
+                        joint_weight,
                         0,
-                        oracle.target_addr,
-                        oracle.rand_mask,
+                        SMALLEST_THRESHOLD,
                         check_idxs,
+                        oracle,
                     )
                     response = oracle.query(ct)
                     y.append(response)
