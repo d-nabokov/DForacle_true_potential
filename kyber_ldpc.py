@@ -427,8 +427,15 @@ for key_idx in range(test_keys):
     unreliable_idxs = []
     # each 7 calls of oracle loses about 0.31941 bits compared to theory
     # lost_information = 0.31941 * (sk_len // joint_weight)
+
+    # Either create a new secret key to simulate calls or obtain a real one for
+    # difference computation
     if cfg.simulate_oracle:
         sk = sample_secret_coefs(sk_len)
+    else:
+        # we should only go here only after long search of compound evsets are done,
+        # so, secret key should be already written to file
+        sk = read_sk("../GoFetch/poc/crypto_victim/kyber.txt")
     all_checks = []
     check_variables = []
     pr_oracle.oracle_calls = 0
@@ -610,7 +617,7 @@ for key_idx in range(test_keys):
                     f"entropy={list_small_str(pmfs_entropy, 4)}, total entropy={sum(pmfs_entropy):.4f}"
                 )
                 print(f"sk coefs={list(sk[var_idx] for var_idx in check_idxs)}")
-                print(f"x==y?:{x == y}")
+                print(f"x==y?:{x == y}; {x=}, {y=}")
                 # s_marginal = marginal_pmf(posterior_pmf, joint_weight)
                 # print(
                 #     f"improved marginal=[{','.join(map(lambda x: list_small_str(x, 5), s_marginal))}]"
@@ -802,9 +809,6 @@ for key_idx in range(test_keys):
         differences_for_batch.append(batch_diff)
         differences_for_batches.append(differences_for_batch)
         oracle_calls_for_batches.append(oracle_calls_for_batch)
-
-    if not cfg.simulate_oracle:
-        sk = read_sk("../GoFetch/poc/crypto_victim/kyber.txt")
 
     # sk_decoded = sk_decoded_marginals
     if cfg.print_intermediate_info:
