@@ -50,8 +50,8 @@ class KyberOracle:
         # position, but we XOR that position with 1, so we end up
         # with zero
         for i in range(7, 56):
-            rbit = (self.rand_mask[i / 8] >> (i & 7)) & 1
-            mabit = (self.masked_addr[i / 8] >> (i & 7)) & 1
+            rbit = (self.rand_mask[i // 8] >> (i & 7)) & 1
+            mabit = (self.masked_addr[i // 8] >> (i & 7)) & 1
             mbit = rbit ^ mabit
             if mbit == 1:
                 self.lowest_message_bit = i
