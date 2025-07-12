@@ -175,9 +175,9 @@ def build_full_rotate_ciphertext(
     """
     u = PolyVec()
 
-    v = build_polymsg_from_oracle(oracle, KYBER_Q // 2 + 1, use_random=True)
+    v = build_polymsg_from_oracle(oracle, KYBER_Q // 2 + 1, use_random=False)
     mask = KYBER_N - 1
-    rotation_offset = KYBER_N / weight
+    rotation_offset = KYBER_N // weight
     for i in range(weight):
         if i == 0:
             u_coef = -z_values[0]

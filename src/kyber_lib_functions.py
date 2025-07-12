@@ -21,12 +21,17 @@ KYBER_N: int = 256
 KYBER_Q: int = 3329  # prime modulus
 
 # Compression sizes (taken straight from the specification)
-if KYBER_K in (2, 3):
+if KYBER_K == 2:
     KYBER_POLYCOMPRESSEDBYTES = 128  # 4 bits / coefficient
     KYBER_POLYVECCOMPRESSEDBYTES = KYBER_K * 352
-else:  # K == 4
+elif KYBER_K == 3:
+    KYBER_POLYCOMPRESSEDBYTES = 128  # 4 bits / coefficient
+    KYBER_POLYVECCOMPRESSEDBYTES = KYBER_K * 320
+elif KYBER_K == 4:
     KYBER_POLYCOMPRESSEDBYTES = 160  # 5 bits / coefficient
     KYBER_POLYVECCOMPRESSEDBYTES = KYBER_K * 320
+else:
+    raise ValueError()
 
 KYBER_INDCPA_BYTES = KYBER_POLYVECCOMPRESSEDBYTES + KYBER_POLYCOMPRESSEDBYTES
 
@@ -61,104 +66,137 @@ class PolyVec:
 #######################################
 
 
-def poly_compress(a: Poly) -> bytearray:
-    """Pure-Python port of `poly_compress` from the reference implementation.
-
-    The output size depends on the chosen parameter set (128 or 160 bytes).
+def csubq(a: int) -> int:
     """
+    Constant-time conditional subtraction of KYBER_Q.
+    Mirrors the 16-bit two’s-complement trick used in the C reference:
+        a  = a - q
+        a += (a >> 15) & q        # adds q back iff a was negative
+    Python’s right-shift on a negative int is an arithmetic shift,
+    so we get the same sign-propagation behaviour.
+    """
+    a -= KYBER_Q
+    a += (a >> 15) & KYBER_Q
+    return a
+
+
+def poly_csubq(p: Poly) -> None:
+    """
+    Apply csubq() to every coefficient in-place.
+    (Constant-time in C; in Python we keep the identical
+    arithmetic but of course the interpreter adds overhead.)
+    """
+    for i in range(KYBER_N):
+        p.coeffs[i] = csubq(p.coeffs[i])
+
+
+def poly_compress(a: Poly) -> bytes:
+    """
+    Compress `a` into the packed-byte representation defined by
+    the Kyber spec (section 5.1).  Returns a `bytes` object of
+    length KYBER_POLYCOMPRESSEDBYTES (128 B for k ∈ {2,3}, 160 B for k = 4).
+
+    The code follows the reference algorithm exactly, differing only
+    in Python-friendly structure (bytearray instead of raw pointer math).
+    """
+    poly_csubq(a)  # canonicalise coefficients first
     r = bytearray(KYBER_POLYCOMPRESSEDBYTES)
-    if KYBER_POLYCOMPRESSEDBYTES == 128:  # 4‑bit packing (Kyber512,768)
-        pos = 0
-        for i in range(0, KYBER_N, 8):
-            t = [0] * 8
-            for j in range(8):
-                u = a.coeffs[i + j]
-                # map to positive standard reps
-                u += (u >> 15) & KYBER_Q
-                # the strange constants are an optimised way to compute
-                #    floor((u * 16 + q/2)/q) mod 16
-                d0 = (u << 4) + 1665  # multiply by 16, add rounding constant
-                d0 *= 80635
-                d0 >>= 28
-                t[j] = d0 & 0xF
-            # pack 8 4‑bit values into 4 bytes
-            r[pos + 0] = t[0] | (t[1] << 4)
-            r[pos + 1] = t[2] | (t[3] << 4)
-            r[pos + 2] = t[4] | (t[5] << 4)
-            r[pos + 3] = t[6] | (t[7] << 4)
-            pos += 4
-    elif KYBER_POLYCOMPRESSEDBYTES == 160:  # 5‑bit packing (Kyber1024)
-        pos = 0
-        for i in range(0, KYBER_N, 8):
-            t = [0] * 8
-            for j in range(8):
-                u = a.coeffs[i + j]
-                u += (u >> 15) & KYBER_Q
-                d0 = (u << 5) + 1664
-                d0 *= 40318
-                d0 >>= 27
-                t[j] = d0 & 0x1F
-            # pack 8 5‑bit values into 5 bytes
-            r[pos + 0] = (t[0] >> 0) | (t[1] << 5)
-            r[pos + 1] = (t[1] >> 3) | (t[2] << 2) | (t[3] << 7)
-            r[pos + 2] = (t[3] >> 1) | (t[4] << 4)
-            r[pos + 3] = (t[4] >> 4) | (t[5] << 1) | (t[6] << 6)
-            r[pos + 4] = (t[6] >> 2) | (t[7] << 3)
-            pos += 5
+    out = 0  # current write index in r
+
+    if KYBER_POLYCOMPRESSEDBYTES == 128:  # 4 bits/coeff
+        for i in range(KYBER_N // 8):
+            t = [
+                (((a.coeffs[8 * i + j] << 4) + KYBER_Q // 2) // KYBER_Q) & 0x0F
+                for j in range(8)
+            ]
+            r[out + 0] = t[0] | (t[1] << 4)
+            r[out + 1] = t[2] | (t[3] << 4)
+            r[out + 2] = t[4] | (t[5] << 4)
+            r[out + 3] = t[6] | (t[7] << 4)
+            out += 4
+
+    elif KYBER_POLYCOMPRESSEDBYTES == 160:  # 5 bits/coeff
+        for i in range(KYBER_N // 8):
+            t = [
+                (((a.coeffs[8 * i + j] << 5) + KYBER_Q // 2) // KYBER_Q) & 0x1F
+                for j in range(8)
+            ]
+            r[out + 0] = (t[0] >> 0) | (t[1] << 5)
+            r[out + 1] = (t[1] >> 3) | (t[2] << 2) | (t[3] << 7)
+            r[out + 2] = (t[3] >> 1) | (t[4] << 4)
+            r[out + 3] = (t[4] >> 4) | (t[5] << 1) | (t[6] << 6)
+            r[out + 4] = (t[6] >> 2) | (t[7] << 3)
+            out += 5
+
     else:
         raise ValueError("KYBER_POLYCOMPRESSEDBYTES must be 128 or 160")
-    return r
+
+    return bytes(r)
 
 
-def polyvec_compress(a: PolyVec) -> bytearray:
-    """Pure‑Python port of `polyvec_compress` (handles both 10‑ and 11‑bit packing)."""
+def polyvec_csubq(v: PolyVec) -> None:
+    """
+    Canonical-reduce every coefficient of every polynomial in-place.
+    """
+    for i in range(KYBER_K):
+        poly_csubq(v.vec[i])
+
+
+def polyvec_compress(a: PolyVec) -> bytes:
+    """
+    Compress an entire vector of K polynomials into the packed-byte layout
+    defined by the Kyber spec (§5.1).  The output length is
+        • K × 352 B when k ∈ {2,3}   (11 B per 8 coefficients, 11-bit bins)
+        • K × 320 B when k = 4        (5 B  per 4 coefficients, 10-bit bins)
+    """
+    polyvec_csubq(a)
     r = bytearray(KYBER_POLYVECCOMPRESSEDBYTES)
-    if KYBER_POLYVECCOMPRESSEDBYTES == KYBER_K * 352:  # 11‑bit packing (Kyber512,768)
-        pos = 0
+    out = 0  # current byte index
+
+    if KYBER_POLYVECCOMPRESSEDBYTES == KYBER_K * 352:
+        # ------------ 11-bit packing: 8 coeffs → 11 bytes ------------
         for i in range(KYBER_K):
-            for j in range(0, KYBER_N, 8):
-                t = [0] * 8
-                for k in range(8):
-                    u = a.vec[i].coeffs[j + k]
-                    u += (u >> 15) & KYBER_Q
-                    d0 = (u << 11) + 1664
-                    d0 *= 645084
-                    d0 >>= 31
-                    t[k] = d0 & 0x7FF
-                # pack 8×11‑bit into 11 bytes
-                r[pos + 0] = (t[0] >> 0) & 0xFF
-                r[pos + 1] = (t[0] >> 8) | (t[1] << 3)
-                r[pos + 2] = (t[1] >> 5) | (t[2] << 6)
-                r[pos + 3] = (t[2] >> 2) & 0xFF
-                r[pos + 4] = (t[2] >> 10) | (t[3] << 1)
-                r[pos + 5] = (t[3] >> 7) | (t[4] << 4)
-                r[pos + 6] = (t[4] >> 4) | (t[5] << 7)
-                r[pos + 7] = (t[5] >> 1) & 0xFF
-                r[pos + 8] = (t[5] >> 9) | (t[6] << 2)
-                r[pos + 9] = (t[6] >> 6) | (t[7] << 5)
-                r[pos + 10] = (t[7] >> 3) & 0xFF
-                pos += 11
-    elif KYBER_POLYVECCOMPRESSEDBYTES == KYBER_K * 320:  # 10‑bit packing (Kyber1024)
-        pos = 0
+            for j in range(KYBER_N // 8):
+                t = [
+                    (((a.vec[i].coeffs[8 * j + k] << 11) + KYBER_Q // 2) // KYBER_Q)
+                    & 0x7FF  # 11-bit slice
+                    for k in range(8)
+                ]
+
+                r[out + 0] = (t[0] >> 0) & 0xFF
+                r[out + 1] = ((t[0] >> 8) | (t[1] << 3)) & 0xFF
+                r[out + 2] = ((t[1] >> 5) | (t[2] << 6)) & 0xFF
+                r[out + 3] = (t[2] >> 2) & 0xFF
+                r[out + 4] = ((t[2] >> 10) | (t[3] << 1)) & 0xFF
+                r[out + 5] = ((t[3] >> 7) | (t[4] << 4)) & 0xFF
+                r[out + 6] = ((t[4] >> 4) | (t[5] << 7)) & 0xFF
+                r[out + 7] = (t[5] >> 1) & 0xFF
+                r[out + 8] = ((t[5] >> 9) | (t[6] << 2)) & 0xFF
+                r[out + 9] = ((t[6] >> 6) | (t[7] << 5)) & 0xFF
+                r[out + 10] = (t[7] >> 3) & 0xFF
+                out += 11
+
+    elif KYBER_POLYVECCOMPRESSEDBYTES == KYBER_K * 320:
+        # ------------ 10-bit packing: 4 coeffs → 5 bytes -------------
         for i in range(KYBER_K):
-            for j in range(0, KYBER_N, 4):
-                t = [0] * 4
-                for k in range(4):
-                    u = a.vec[i].coeffs[j + k]
-                    u += (u >> 15) & KYBER_Q
-                    d0 = (u << 10) + 1665
-                    d0 *= 1290167
-                    d0 >>= 32
-                    t[k] = d0 & 0x3FF
-                r[pos + 0] = (t[0] >> 0) & 0xFF
-                r[pos + 1] = (t[0] >> 8) | (t[1] << 2)
-                r[pos + 2] = (t[1] >> 6) | (t[2] << 4)
-                r[pos + 3] = (t[2] >> 4) | (t[3] << 6)
-                r[pos + 4] = (t[3] >> 2) & 0xFF
-                pos += 5
+            for j in range(KYBER_N // 4):
+                t = [
+                    (((a.vec[i].coeffs[4 * j + k] << 10) + KYBER_Q // 2) // KYBER_Q)
+                    & 0x3FF  # 10-bit slice
+                    for k in range(4)
+                ]
+
+                r[out + 0] = (t[0] >> 0) & 0xFF
+                r[out + 1] = ((t[0] >> 8) | (t[1] << 2)) & 0xFF
+                r[out + 2] = ((t[1] >> 6) | (t[2] << 4)) & 0xFF
+                r[out + 3] = ((t[2] >> 4) | (t[3] << 6)) & 0xFF
+                r[out + 4] = (t[3] >> 2) & 0xFF
+                out += 5
+
     else:
-        raise ValueError("KYBER_POLYVECCOMPRESSEDBYTES does not match parameter set")
-    return r
+        raise ValueError("KYBER_POLYVECCOMPRESSEDBYTES must be K×352 or K×320")
+
+    return bytes(r)
 
 
 def pack_ciphertext(b: PolyVec, v: Poly) -> bytearray:
