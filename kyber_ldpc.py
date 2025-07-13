@@ -131,6 +131,7 @@ class Config:
     seed: int = 100
     simulate_oracle: bool = True
     port: int = 3334
+    enable_full_rotation: bool = True
 
 
 def get_config(argv) -> Config:
@@ -174,6 +175,12 @@ def get_config(argv) -> Config:
         type=str2bool,
         default=Config.simulate_oracle,
         help="Instead of using the actual oracle, simulate it",
+    )
+    p.add_argument(
+        "--enable_full_rotation",
+        type=str2bool,
+        default=Config.enable_full_rotation,
+        help="Use precomputed encodings over full rotation checks",
     )
 
     p.add_argument(
@@ -240,52 +247,44 @@ for s in secret_joint_range(ETA, weight=joint_weight):
 s_prior = list(list(prob_s.values()) for _ in range(sk_len))
 secret_variables = np.array(s_prior, dtype=np.float32)
 
+if cfg.enable_full_rotation:
+    database_dir = "database_10000_768"
 
-database_dir = "database_10000_768"
-
-oracle_configurations = []
-
-full_rotation_check = (0, 64, 128, 192)
-full_rotation_checks = []
-for block_idx in range(k):
-    for i in range(64):
-        full_rotation_checks.append(
-            tuple(x + i + n * block_idx for x in full_rotation_check)
-        )
-database_4_full = eval(
-    open(os.path.join(database_dir, "database_4_full.txt"), "rt").read()
-)
-
-if cfg.base_oracle_calls == 6:
-    conf = ([149, 543, 45, 312, 30, 4], [4, 2, 1, 3, 4, 6])
-elif cfg.base_oracle_calls == 7:
-    conf = ([25, 149, 543, 45, 312, 30, 4], [3, 4, 2, 1, 3, 4, 6])
-elif cfg.base_oracle_calls == 8:
-    conf = ([465, 25, 149, 543, 45, 312, 30, 4], [0, 3, 4, 2, 1, 3, 4, 6])
-elif cfg.base_oracle_calls == 9:
-    conf = ([201, 465, 25, 149, 543, 45, 312, 30, 4], [5, 0, 3, 4, 2, 1, 3, 4, 6])
-elif cfg.base_oracle_calls == 10:
-    conf = (
-        [523, 201, 465, 25, 149, 543, 45, 312, 30, 4],
-        [1, 5, 0, 3, 4, 2, 1, 3, 4, 6],
+    full_rotation_check = (0, 64, 128, 192)
+    full_rotation_checks = []
+    for block_idx in range(k):
+        for i in range(64):
+            full_rotation_checks.append(
+                tuple(x + i + n * block_idx for x in full_rotation_check)
+            )
+    database_4_full = eval(
+        open(os.path.join(database_dir, "database_4_full.txt"), "rt").read()
     )
-else:
-    raise ValueError("Unsupported number of calls for base case")
-full_rotation_inequalities = get_inequalities(
-    conf,
-    database_4_full,
-)
-full_rotation_split = inequalities_to_split(full_rotation_inequalities)
-oracle_configurations.append((full_rotation_checks, full_rotation_split))
 
-oracle_calls = 0
-for checks, split in oracle_configurations:
-    oracle_calls += len(checks) * len(split)
+    if cfg.base_oracle_calls == 6:
+        conf = ([149, 543, 45, 312, 30, 4], [4, 2, 1, 3, 4, 6])
+    elif cfg.base_oracle_calls == 7:
+        conf = ([25, 149, 543, 45, 312, 30, 4], [3, 4, 2, 1, 3, 4, 6])
+    elif cfg.base_oracle_calls == 8:
+        conf = ([465, 25, 149, 543, 45, 312, 30, 4], [0, 3, 4, 2, 1, 3, 4, 6])
+    elif cfg.base_oracle_calls == 9:
+        conf = ([201, 465, 25, 149, 543, 45, 312, 30, 4], [5, 0, 3, 4, 2, 1, 3, 4, 6])
+    elif cfg.base_oracle_calls == 10:
+        conf = (
+            [523, 201, 465, 25, 149, 543, 45, 312, 30, 4],
+            [1, 5, 0, 3, 4, 2, 1, 3, 4, 6],
+        )
+    else:
+        raise ValueError("Unsupported number of calls for base case")
+    full_rotation_inequalities = get_inequalities(
+        conf,
+        database_4_full,
+    )
+    full_rotation_split = inequalities_to_split(full_rotation_inequalities)
+
 max_info_per_call = 1 - entropy([p, 1 - p])
 theoretical_num_of_calls = n * k * entropy(prob_s) / max_info_per_call
-print(
-    f"Using {oracle_calls} calls while theory suggest that the minimum is {theoretical_num_of_calls}"
-)
+print(f"Theory suggest that the minimum number of calls is {theoretical_num_of_calls}")
 
 # mask, Z = precompute_mask_and_directions(
 #     first_z=5, s_bound=ETA, joint_weight=joint_weight
@@ -435,72 +434,76 @@ for key_idx in range(test_keys):
 
     sk_decoded_marginals = [0] * sk_len
 
-    # base case: full rotation checks
-    t0 = time.perf_counter_ns()
-    checks, split = full_rotation_checks, full_rotation_split
-    check_encoding = multibit_encoding(split)
-    pickled_filename = f"cond_prob_all_y_0{int(p * 100)}_{len(split)}bits"
-    if p == 0.95 and len(split) in [6, 7, 8, 9, 10]:
-        if os.path.exists(pickled_filename):
-            with open(pickled_filename, "rb") as f:
-                all_y_pmf, pr_y = pickle.load(f)
+    if cfg.enable_full_rotation:
+        t0 = time.perf_counter_ns()
+        checks, split = full_rotation_checks, full_rotation_split
+        check_encoding = multibit_encoding(split)
+        pickled_filename = f"cond_prob_all_y_0{int(p * 100)}_{len(split)}bits"
+        if p == 0.95 and len(split) in [6, 7, 8, 9, 10]:
+            if os.path.exists(pickled_filename):
+                with open(pickled_filename, "rb") as f:
+                    all_y_pmf, pr_y = pickle.load(f)
+            else:
+                all_y_pmf, pr_y = s_distribution_for_all_y(
+                    pr_oracle, check_encoding, joint_pmf
+                )
+                with open(pickled_filename, "wb") as f:
+                    pickle.dump((all_y_pmf, pr_y), f)
         else:
             all_y_pmf, pr_y = s_distribution_for_all_y(
                 pr_oracle, check_encoding, joint_pmf
             )
-            with open(pickled_filename, "wb") as f:
-                pickle.dump((all_y_pmf, pr_y), f)
+
+        all_checks.extend(checks)
+        for check_idxs in checks:
+            if cfg.simulate_oracle:
+                enc_idx = 0
+                for var_idx in check_idxs:
+                    enc_idx = enc_idx * coef_support_size + (sk[var_idx] + ETA)
+                x = check_encoding[enc_idx]
+                y = sample_coef_static(x, pr_oracle)
+            else:
+                y = []
+                for inequality in full_rotation_inequalities:
+                    z_values, thresholds, enabled, signs = inequality
+                    ct = build_full_rotate_ciphertext(
+                        z_values,
+                        joint_weight,
+                        thresholds,
+                        enabled,
+                        signs,
+                        SMALLEST_THRESHOLD,
+                        check_idxs[0] // n,
+                        check_idxs[0] % n,
+                        oracle,
+                    )
+                    response = oracle.query(ct)
+                    y.append(response)
+            y_idx = bit_tuple_to_int(y)
+            pmf = all_y_pmf[y_idx]
+
+            channel_pmf = np.array(
+                list(pr_cond_yx(y, x, pr_oracle) for x in check_encoding)
+            )
+            channel_pmf /= sum(channel_pmf)
+            check_variables.append(channel_pmf)
+
+            # check_variables.append(pmf)
+            t1 = time.perf_counter_ns()
+            s_marginal = marginal_pmf(pmf, joint_weight)
+            for i, var_idx in enumerate(check_idxs):
+                sk_decoded_marginals[var_idx] = s_marginal[i]
+            time_base_marginals += time.perf_counter_ns() - t1
+        time_base += time.perf_counter_ns() - t0
+
+        if cfg.print_intermediate_info:
+            base_bad_variables = []
+            for i, (expect, actual_pmf) in enumerate(zip(sk, sk_decoded_marginals)):
+                if actual_pmf[expect + ETA] < 0.1:
+                    base_bad_variables.append(i)
+            print(f"After base case got bad variables: {base_bad_variables}")
     else:
-        all_y_pmf, pr_y = s_distribution_for_all_y(pr_oracle, check_encoding, joint_pmf)
-
-    all_checks.extend(checks)
-    for check_idxs in checks:
-        if cfg.simulate_oracle:
-            enc_idx = 0
-            for var_idx in check_idxs:
-                enc_idx = enc_idx * coef_support_size + (sk[var_idx] + ETA)
-            x = check_encoding[enc_idx]
-            y = sample_coef_static(x, pr_oracle)
-        else:
-            y = []
-            for inequality in full_rotation_inequalities:
-                z_values, thresholds, enabled, signs = inequality
-                ct = build_full_rotate_ciphertext(
-                    z_values,
-                    joint_weight,
-                    thresholds,
-                    enabled,
-                    signs,
-                    SMALLEST_THRESHOLD,
-                    check_idxs[0] // n,
-                    check_idxs[0] % n,
-                    oracle,
-                )
-                response = oracle.query(ct)
-                y.append(response)
-        y_idx = bit_tuple_to_int(y)
-        pmf = all_y_pmf[y_idx]
-
-        channel_pmf = np.array(
-            list(pr_cond_yx(y, x, pr_oracle) for x in check_encoding)
-        )
-        channel_pmf /= sum(channel_pmf)
-        check_variables.append(channel_pmf)
-
-        # check_variables.append(pmf)
-        t1 = time.perf_counter_ns()
-        s_marginal = marginal_pmf(pmf, joint_weight)
-        for i, var_idx in enumerate(check_idxs):
-            sk_decoded_marginals[var_idx] = s_marginal[i]
-        time_base_marginals += time.perf_counter_ns() - t1
-    time_base += time.perf_counter_ns() - t0
-
-    if cfg.print_intermediate_info:
-        base_bad_variables = []
-        for i, (expect, actual_pmf) in enumerate(zip(sk, sk_decoded_marginals)):
-            if actual_pmf[expect + ETA] < 0.1:
-                base_bad_variables.append(i)
-        print(f"After base case got bad variables: {base_bad_variables}")
+        sk_decoded_marginals = secret_variables
 
     t2 = time.perf_counter_ns()
     for batch_no in range(additional_batches):
