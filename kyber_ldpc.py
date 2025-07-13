@@ -124,7 +124,6 @@ class Config:
     batch_num_for_full_ldpc: list = None
     record_intermediate_batches: bool = False
     max_additional_batches: int = 28
-    full_last_batches: int = 0
     try_fix_unreliable_on_last_batch: bool = False
     use_non_zero_inequality: bool = True
     keys_to_test: int = 1
@@ -194,12 +193,6 @@ def get_config(argv) -> Config:
         type=int,
         default=Config.max_additional_batches,
         help="Number of batches to add",
-    )
-    p.add_argument(
-        "--full_last_batches",
-        type=int,
-        default=Config.full_last_batches,
-        help="Last N batches to be more independent and ignore entropy so far",
     )
     p.add_argument(
         "--keys_to_test",
