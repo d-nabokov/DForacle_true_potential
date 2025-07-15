@@ -21,7 +21,6 @@ from simulate.max_likelihood import (
     s_distribution_for_all_y,
     s_distribution_from_hard_y,
 )
-from simulate_rs import DecoderKyberB2SW2, DecoderKyberB2SW4
 
 from src.adaptive_search_for_encoding import (
     MILP_create_model,
@@ -243,7 +242,7 @@ p = 0.95
 pr_oracle = SimpleOracle(p)
 
 sk_len = n * k
-assert sk_len == 768, "Need to add support for other parameter sets"
+assert k == 2 or k == 3, "Need to add support for Kyber1024"
 
 joint_weight = 4
 prob_s = secret_distribution(ETA)
@@ -255,7 +254,7 @@ s_prior = list(list(prob_s.values()) for _ in range(sk_len))
 secret_variables = np.array(s_prior, dtype=np.float32)
 
 if cfg.enable_full_rotation:
-    database_dir = "database_10000_768"
+    database_dir = f"database_10000_{sk_len}"
 
     full_rotation_check = (0, 64, 128, 192)
     full_rotation_checks = []
@@ -268,21 +267,42 @@ if cfg.enable_full_rotation:
         open(os.path.join(database_dir, "database_4_full.txt"), "rt").read()
     )
 
-    if cfg.base_oracle_calls == 6:
-        conf = ([149, 543, 45, 312, 30, 4], [4, 2, 1, 3, 4, 6])
-    elif cfg.base_oracle_calls == 7:
-        conf = ([25, 149, 543, 45, 312, 30, 4], [3, 4, 2, 1, 3, 4, 6])
-    elif cfg.base_oracle_calls == 8:
-        conf = ([465, 25, 149, 543, 45, 312, 30, 4], [0, 3, 4, 2, 1, 3, 4, 6])
-    elif cfg.base_oracle_calls == 9:
-        conf = ([201, 465, 25, 149, 543, 45, 312, 30, 4], [5, 0, 3, 4, 2, 1, 3, 4, 6])
-    elif cfg.base_oracle_calls == 10:
-        conf = (
-            [523, 201, 465, 25, 149, 543, 45, 312, 30, 4],
-            [1, 5, 0, 3, 4, 2, 1, 3, 4, 6],
-        )
-    else:
-        raise ValueError("Unsupported number of calls for base case")
+    if k == 2:
+        if cfg.base_oracle_calls == 6:
+            conf = ([520, 1573, 1364, 471, 97, 196], [6, 4, 2, 6, 3, 1])
+        elif cfg.base_oracle_calls == 7:
+            conf = ([2185, 520, 1573, 1364, 471, 97, 196], [0, 6, 4, 2, 6, 3, 1])
+        elif cfg.base_oracle_calls == 8:
+            conf = (
+                [449, 2185, 520, 1573, 1364, 471, 97, 196],
+                [1, 0, 6, 4, 2, 6, 3, 1],
+            )
+        elif cfg.base_oracle_calls == 9:
+            conf = (
+                [1704, 449, 2185, 520, 1573, 1364, 471, 97, 196],
+                [7, 1, 0, 6, 4, 2, 6, 3, 1],
+            )
+        else:
+            raise ValueError("Unsupported number of calls for base case")
+    if k == 3:
+        if cfg.base_oracle_calls == 6:
+            conf = ([149, 543, 45, 312, 30, 4], [4, 2, 1, 3, 4, 6])
+        elif cfg.base_oracle_calls == 7:
+            conf = ([25, 149, 543, 45, 312, 30, 4], [3, 4, 2, 1, 3, 4, 6])
+        elif cfg.base_oracle_calls == 8:
+            conf = ([465, 25, 149, 543, 45, 312, 30, 4], [0, 3, 4, 2, 1, 3, 4, 6])
+        elif cfg.base_oracle_calls == 9:
+            conf = (
+                [201, 465, 25, 149, 543, 45, 312, 30, 4],
+                [5, 0, 3, 4, 2, 1, 3, 4, 6],
+            )
+        elif cfg.base_oracle_calls == 10:
+            conf = (
+                [523, 201, 465, 25, 149, 543, 45, 312, 30, 4],
+                [1, 5, 0, 3, 4, 2, 1, 3, 4, 6],
+            )
+        else:
+            raise ValueError("Unsupported number of calls for base case")
     full_rotation_inequalities = get_inequalities(
         conf,
         database_4_full,
@@ -445,7 +465,7 @@ for key_idx in range(test_keys):
         t0 = time.perf_counter_ns()
         checks, split = full_rotation_checks, full_rotation_split
         check_encoding = multibit_encoding(split)
-        pickled_filename = f"cond_prob_all_y_0{int(p * 100)}_{len(split)}bits"
+        pickled_filename = f"cond_prob_all_k{k}_y_0{int(p * 100)}_{len(split)}bits"
         if p == 0.95 and len(split) in [6, 7, 8, 9, 10]:
             if os.path.exists(pickled_filename):
                 with open(pickled_filename, "rb") as f:
@@ -646,6 +666,7 @@ for key_idx in range(test_keys):
                 check_variables_intermediate,
                 joint_weight,
                 10000,
+                ETA,
                 layered=False,
             )
         # here we try to use good LDPC call in the middle
@@ -656,6 +677,7 @@ for key_idx in range(test_keys):
                 check_variables_intermediate,
                 joint_weight,
                 10000,
+                ETA,
                 layered=False,
             )
         else:
@@ -672,6 +694,7 @@ for key_idx in range(test_keys):
                 check_variables_intermediate,
                 joint_weight,
                 iterations,
+                ETA,
                 layered=True,
             )
 
@@ -688,6 +711,7 @@ for key_idx in range(test_keys):
                 check_variables_intermediate,
                 joint_weight,
                 10000,
+                ETA,
                 layered=False,
             )
             oracle_calls_for_batch.append(pr_oracle.oracle_calls)
@@ -721,6 +745,7 @@ for key_idx in range(test_keys):
             check_variables_intermediate,
             joint_weight,
             10000,
+            ETA,
             layered=False,
         )
         for i, actual_pmf in enumerate(sk_decoded_marginals):
@@ -798,7 +823,13 @@ for key_idx in range(test_keys):
     epsilon = 1e-20
     check_variables[check_variables == 0] = epsilon
     sk_decoded = ldpc_decode(
-        all_checks, secret_variables, check_variables, joint_weight, 10000
+        all_checks,
+        secret_variables,
+        check_variables,
+        joint_weight,
+        10000,
+        ETA,
+        layered=False,
     )
     time_ldpc += time.perf_counter_ns() - t0
     if cfg.record_intermediate_batches:

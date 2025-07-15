@@ -2,7 +2,7 @@ import itertools as it
 import random
 
 import numpy as np
-from simulate_rs import DecoderKyberB2SW2, DecoderKyberB2SW4
+from simulate_rs import DecoderKyberB2SW2, DecoderKyberB2SW4, DecoderKyberB3SW4
 
 
 def sample_coef_static(expected, pr_oracle):
@@ -137,6 +137,7 @@ def ldpc_decode(
     check_variables,
     joint_weight,
     iterations,
+    eta,
     layered=False,
 ):
     num_rows = len(check_idxs)
@@ -152,12 +153,16 @@ def ldpc_decode(
     max_row_weight = np.max(row_counts)
     col_counts = np.count_nonzero(matrix, axis=0)
     max_col_weight = np.max(col_counts)
-    if joint_weight == 2:
-        decoder_class = DecoderKyberB2SW2
-    elif joint_weight == 4:
-        decoder_class = DecoderKyberB2SW4
-    else:
-        raise ValueError(f"{joint_weight} weight for check variable is not supported")
+    decoder_map = {
+        (2, 2): DecoderKyberB2SW2,
+        (4, 2): DecoderKyberB2SW4,
+        (4, 3): DecoderKyberB3SW4,
+    }
+    decoder_class = decoder_map.get((joint_weight, eta))
+    if decoder_class is None:
+        raise ValueError(
+            f"Configuration with weight={joint_weight},eta={eta} is not supported"
+        )
     decoder = decoder_class(
         matrix.astype("int8"), max_col_weight, max_row_weight, iterations
     )

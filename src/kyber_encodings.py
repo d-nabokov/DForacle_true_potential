@@ -4,32 +4,37 @@ from math import comb, log, prod
 
 import numpy as np
 
-# Kyber-512 params
-# Q = 3329
-# ETA = 3
-# block_len = 256
-# num_blocks = 2
-# du = 10
-# dv = 4
-# SMALLEST_THRESHOLD = 208
+KYBER_K = 3
 
-# Kyber-768 params
-Q = 3329
-ETA = 2
-block_len = 256
-num_blocks = 3
-du = 10
-dv = 4
-SMALLEST_THRESHOLD = 208
-
-# Kyber-1024 params
-# Q = 3329
-# ETA = 2
-# block_len = 256
-# num_blocks = 4
-# du = 11
-# dv = 5
-# SMALLEST_THRESHOLD = 104
+if KYBER_K == 2:
+    # Kyber-512 params
+    Q = 3329
+    ETA = 3
+    block_len = 256
+    num_blocks = 2
+    du = 10
+    dv = 4
+    SMALLEST_THRESHOLD = 208
+elif KYBER_K == 3:
+    # Kyber-768 params
+    Q = 3329
+    ETA = 2
+    block_len = 256
+    num_blocks = 3
+    du = 10
+    dv = 4
+    SMALLEST_THRESHOLD = 208
+elif KYBER_K == 4:
+    # Kyber-1024 params
+    Q = 3329
+    ETA = 2
+    block_len = 256
+    num_blocks = 4
+    du = 11
+    dv = 5
+    SMALLEST_THRESHOLD = 104
+else:
+    raise ValueError()
 
 
 n = block_len
