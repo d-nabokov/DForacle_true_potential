@@ -132,6 +132,7 @@ class Config:
     simulate_oracle: bool = True
     port: int = 3334
     enable_full_rotation: bool = True
+    print_diff: bool = True
 
 
 def get_config(argv) -> Config:
@@ -181,6 +182,12 @@ def get_config(argv) -> Config:
         type=str2bool,
         default=Config.enable_full_rotation,
         help="Use precomputed encodings over full rotation checks",
+    )
+    p.add_argument(
+        "--print_diff",
+        type=str2bool,
+        default=Config.print_diff,
+        help="Print differences from the secret key",
     )
 
     p.add_argument(
@@ -807,7 +814,7 @@ for key_idx in range(test_keys):
         oracle_calls_for_batches.append(oracle_calls_for_batch)
 
     # sk_decoded = sk_decoded_marginals
-    if cfg.print_intermediate_info:
+    if cfg.print_intermediate_info or cfg.print_diff:
         matrix = np.zeros((len(all_checks), sk_len), dtype=int)
         for row_idx, check in enumerate(all_checks):
             for col_idx in check:
@@ -816,6 +823,7 @@ for key_idx in range(test_keys):
         max_row_weight = np.max(row_counts)
         col_counts = np.count_nonzero(matrix, axis=0)
         max_col_weight = np.max(col_counts)
+    if cfg.print_intermediate_info:
         print(f"{max_row_weight=}, {max_col_weight=}")
         intermediate_sk.append(sk_decoded)
         for i, s_i in enumerate(sk):
@@ -839,13 +847,15 @@ for key_idx in range(test_keys):
                 )
                 print(f"{selector} {list_small_str(pmf)}{full_ldpc_selector}")
 
+    if cfg.print_diff:
+        print(f"key {key_idx}")
     differences = 0
     for i, (expect, actual_pmf) in enumerate(zip(sk, sk_decoded)):
         actual = np.argmax(actual_pmf) - ETA
         # print(f"{i}: {expect=}, {actual=}, {list_small_str(actual_pmf)}")
         if expect != actual:
             differences += 1
-            if cfg.print_intermediate_info:
+            if cfg.print_intermediate_info or cfg.print_diff:
                 print(
                     f"{i}: {expect=}, {actual=}, {list_small_str(actual_pmf)}, checks for var: {col_counts[i]}"
                 )
