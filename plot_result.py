@@ -65,7 +65,7 @@ def build_graphs(
     ax2.set_ylabel("Success probability")
     # ax2.set_title("Graph 2: Key-recovery success vs oracle calls")
     ax2.set_ylim(0, 1.05)
-    ax2.set_xlim(left=2600, right=(oracle_mean[-1] + 20))
+    ax2.set_xlim(left=1600, right=(oracle_mean[-1] + 20))
     ax2.grid(True)
     ax2.legend()
 

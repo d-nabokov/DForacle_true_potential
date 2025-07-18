@@ -34,6 +34,7 @@ from src.adaptive_search_for_encoding import (
 )
 from src.kyber_encodings import (
     ETA,
+    KYBER_K,
     SMALLEST_THRESHOLD,
     Z_BOUND,
     anticyclic_shift_multi,
@@ -241,8 +242,8 @@ cfg = get_config(sys.argv[1:])
 p = 0.95
 pr_oracle = SimpleOracle(p)
 
-sk_len = n * k
-assert k == 2 or k == 3, "Need to add support for Kyber1024"
+sk_len = n * KYBER_K
+assert k == KYBER_K or k == KYBER_K, "Need to add support for Kyber1024"
 
 joint_weight = 4
 prob_s = secret_distribution(ETA)
@@ -267,7 +268,7 @@ if cfg.enable_full_rotation:
         open(os.path.join(database_dir, "database_4_full.txt"), "rt").read()
     )
 
-    if k == 2:
+    if KYBER_K == 2:
         if cfg.base_oracle_calls == 6:
             conf = ([520, 1573, 1364, 471, 97, 196], [6, 4, 2, 6, 3, 1])
         elif cfg.base_oracle_calls == 7:
@@ -284,7 +285,7 @@ if cfg.enable_full_rotation:
             )
         else:
             raise ValueError("Unsupported number of calls for base case")
-    if k == 3:
+    if KYBER_K == 3:
         if cfg.base_oracle_calls == 6:
             conf = ([149, 543, 45, 312, 30, 4], [4, 2, 1, 3, 4, 6])
         elif cfg.base_oracle_calls == 7:
@@ -331,17 +332,22 @@ mask = mask.T
 
 if cfg.use_non_zero_inequality:
     # Just trying to do something reasonable? But seems random still
-    k = 12
+    coef_mult = 12
+    if KYBER_K == 2:
+        z_coefs_list = [-14, -12, -10, -8, -5, -3, 0, 3, 5, 8, 10, 12, 14]
+    elif KYBER_K == 3:
+        z_coefs_list = [-10, -8, -5, -3, 0, 3, 5, 8, 10]
     Z_t = np.array(
         list(
             set(
                 tuple(
                     np.vectorize(decompress)(
-                        np.vectorize(compress)(np.array(z) * k, du), du
+                        np.vectorize(compress)(np.array(z) * coef_mult, du), du
                     )
                 )
                 for z in it.product(
-                    [-10, -8, -5, -3, 0, 3, 5, 8, 10], repeat=joint_weight
+                    z_coefs_list,
+                    repeat=joint_weight,
                 )
                 if any(z)
             )

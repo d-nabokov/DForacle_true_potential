@@ -4,7 +4,7 @@ from math import comb, log, prod
 
 import numpy as np
 
-KYBER_K = 3
+KYBER_K = 2
 
 if KYBER_K == 2:
     # Kyber-512 params
