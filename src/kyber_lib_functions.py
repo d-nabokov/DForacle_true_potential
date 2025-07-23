@@ -23,13 +23,13 @@ KYBER_Q: int = 3329  # prime modulus
 # Compression sizes (taken straight from the specification)
 if KYBER_K == 2:
     KYBER_POLYCOMPRESSEDBYTES = 128  # 4 bits / coefficient
-    KYBER_POLYVECCOMPRESSEDBYTES = KYBER_K * 352
+    KYBER_POLYVECCOMPRESSEDBYTES = KYBER_K * 320
 elif KYBER_K == 3:
     KYBER_POLYCOMPRESSEDBYTES = 128  # 4 bits / coefficient
     KYBER_POLYVECCOMPRESSEDBYTES = KYBER_K * 320
 elif KYBER_K == 4:
     KYBER_POLYCOMPRESSEDBYTES = 160  # 5 bits / coefficient
-    KYBER_POLYVECCOMPRESSEDBYTES = KYBER_K * 320
+    KYBER_POLYVECCOMPRESSEDBYTES = KYBER_K * 352
 else:
     raise ValueError()
 
