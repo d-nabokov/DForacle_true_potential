@@ -444,6 +444,7 @@ if not cfg.simulate_oracle and cfg.keys_to_test > 1:
 if not cfg.simulate_oracle:
     oracle = KyberOracle("127.0.0.1", cfg.port)
 
+ct_info = open("ct_info.txt", "wt")
 y_statistic = defaultdict(int)
 for key_idx in range(test_keys):
     intermediate_sk = []
@@ -554,7 +555,7 @@ for key_idx in range(test_keys):
                 batch_no * batch_checks_num : (batch_no + 1) * batch_checks_num
             ]
 
-        for check_idxs in checks:
+        for check_pos_in_batch, check_idxs in enumerate(checks):
             check_idxs = sorted(check_idxs)
             pmfs = list(sk_decoded_marginals[i] for i in check_idxs)
             pmfs_entropy = list(map(entropy, pmfs))
@@ -627,6 +628,9 @@ for key_idx in range(test_keys):
                     check_idxs,
                     oracle,
                 )
+                if batch_no == 0 and check_pos_in_batch < 10:
+                    print(f"secret variables: {check_idxs}", file=ct_info)
+                    print(", ".join(f"0x{b:02x}" for b in ct), file=ct_info)
                 y = oracle.query(ct)
             y_statistic[y] += 1
             channel_pmf = np.array(list(pr_oracle.prob_of(x, y, 0) for x in encoding))
