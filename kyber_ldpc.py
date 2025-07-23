@@ -628,10 +628,19 @@ for key_idx in range(test_keys):
                     check_idxs,
                     oracle,
                 )
-                if batch_no == 0 and check_pos_in_batch < 10:
-                    print(f"secret variables: {check_idxs}", file=ct_info)
-                    print(", ".join(f"0x{b:02x}" for b in ct), file=ct_info)
                 y = oracle.query(ct)
+                if batch_no == 0 and check_pos_in_batch < 10:
+                    enc_idx = 0
+                    for var_idx in check_idxs:
+                        enc_idx = enc_idx * coef_support_size + (sk[var_idx] + ETA)
+                    x = encoding[enc_idx]
+                    print(f"secret variables: {check_idxs}", file=ct_info)
+                    print(f"x==y?:{x == y}; {x=}, {y=}")
+                    print(
+                        f"dot: {np.dot(z_values, list(sk[var_idx] for var_idx in check_idxs))}"
+                    )
+                    print(", ".join(f"0x{b:02x}" for b in ct), file=ct_info)
+
             y_statistic[y] += 1
             channel_pmf = np.array(list(pr_oracle.prob_of(x, y, 0) for x in encoding))
             channel_pmf /= sum(channel_pmf)
