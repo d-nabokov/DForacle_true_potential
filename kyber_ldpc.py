@@ -629,12 +629,15 @@ for key_idx in range(test_keys):
                     oracle,
                 )
                 y = oracle.query(ct)
-                if batch_no == 0 and check_pos_in_batch < 10:
+                if batch_no == 0 and check_pos_in_batch < 30:
                     enc_idx = 0
                     for var_idx in check_idxs:
                         enc_idx = enc_idx * coef_support_size + (sk[var_idx] + ETA)
                     x = encoding[enc_idx]
-                    print(f"secret variables: {check_idxs}", file=ct_info)
+                    print(
+                        f"{check_pos_in_batch}: secret variables: {check_idxs}",
+                        file=ct_info,
+                    )
                     print(f"x==y?:{x == y}; {x=}, {y=}")
                     print(
                         f"dot: {np.dot(z_values, list(sk[var_idx] for var_idx in check_idxs))}"
