@@ -13,6 +13,8 @@ import numpy as np
 
 sys.path.append("../SCA-LDPC/simulate-with-python")
 
+import platform
+
 from simulate.kyber import sample_secret_coefs, secret_distribution
 from simulate.make_code import generate_ldpc_from_protograph
 from simulate.max_likelihood import (
@@ -70,6 +72,17 @@ from src.ldpc import (
     ldpc_decode,
     sample_coef_static,
 )
+
+if platform.system() == "Darwin" and (
+    platform.machine() == "arm64" or platform.processor() == "arm"
+):
+    import ctypes
+    import ctypes.util
+
+    libc = ctypes.CDLL(ctypes.util.find_library("c"), use_errno=True)
+    QOS_CLASS_USER_INTERACTIVE = 0x21  # see <pthread/qos.h>
+    if libc.pthread_set_qos_class_self_np(QOS_CLASS_USER_INTERACTIVE, 0) != 0:
+        raise OSError(ctypes.get_errno(), "pthread_set_qos_class_self_np failed")
 
 
 def is_in(x, lst: list):
