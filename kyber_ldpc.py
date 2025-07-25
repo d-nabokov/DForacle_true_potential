@@ -638,9 +638,13 @@ for key_idx in range(test_keys):
                         f"{check_pos_in_batch}: secret variables: {check_idxs}",
                         file=ct_info,
                     )
-                    print(f"x==y?:{x == y}; {x=}, {y=}")
                     print(
-                        f"dot: {np.dot(z_values, list(sk[var_idx] for var_idx in check_idxs))}"
+                        f"x==y?:{x == y}; {x=}, {y=}",
+                        file=ct_info,
+                    )
+                    print(
+                        f"dot: {np.dot(z_values, list(sk[var_idx] for var_idx in check_idxs))}",
+                        file=ct_info,
                     )
                     print(", ".join(f"0x{b:02x}" for b in ct), file=ct_info)
 
