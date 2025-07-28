@@ -538,6 +538,7 @@ for key_idx in range(test_keys):
                         oracle,
                     )
                     response = oracle.query(ct)
+                    pr_oracle.oracle_calls += 1
                     y.append(response)
             y_idx = bit_tuple_to_int(y)
             pmf = all_y_pmf[y_idx]
@@ -655,6 +656,7 @@ for key_idx in range(test_keys):
                     oracle,
                 )
                 y = oracle.query(ct)
+                pr_oracle.oracle_calls += 1
                 enc_idx = 0
                 for var_idx in check_idxs:
                     enc_idx = enc_idx * coef_support_size + (sk[var_idx] + ETA)
@@ -846,6 +848,7 @@ for key_idx in range(test_keys):
                         oracle,
                     )
                     response = oracle.query(ct)
+                    pr_oracle.oracle_calls += 1
                     y.append(response)
             for y_val in y:
                 y_statistic[y_val] += 1
