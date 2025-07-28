@@ -379,7 +379,7 @@ for key_idx in range(test_keys):
             )
 
         all_checks.extend(checks)
-        for check_idxs in checks:
+        for check_pos, check_idxs in enumerate(checks):
             if cfg.simulate_oracle:
                 enc_idx = 0
                 for var_idx in check_idxs:
@@ -388,7 +388,11 @@ for key_idx in range(test_keys):
                 y = sample_coef_static(x, pr_oracle)
             else:
                 y = []
-                for inequality in full_rotation_inequalities:
+                enc_idx = 0
+                for var_idx in check_idxs:
+                    enc_idx = enc_idx * coef_support_size + (sk[var_idx] + ETA)
+                x = check_encoding[enc_idx]
+                for ineq_idx, inequality in enumerate(full_rotation_inequalities):
                     z_values, thresholds, enabled, signs = inequality
                     ct = build_full_rotate_ciphertext(
                         z_values,
@@ -402,6 +406,15 @@ for key_idx in range(test_keys):
                         oracle,
                     )
                     response = oracle.query(ct)
+                    print(
+                        f"{check_pos}: secret variables: {check_idxs}, z_values: {z_values}, thresholds: {thresholds}, enabled: {enabled}, signs: {signs}",
+                        file=ct_info,
+                    )
+                    print(
+                        f"x==y?:{x[ineq_idx] == response}; x={x[ineq_idx]}, y={response}",
+                        file=ct_info,
+                    )
+                    print(", ".join(f"0x{b:02x}" for b in ct), file=ct_info)
                     pr_oracle.oracle_calls += 1
                     y.append(response)
             y_idx = bit_tuple_to_int(y)
