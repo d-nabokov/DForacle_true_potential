@@ -87,18 +87,23 @@ if platform.system() == "Darwin" and (
 
 
 def timed_query(oracle, ct):
-    t_wall_0 = time.perf_counter()
-    t_cpu_0 = time.process_time()  # user+sys time for *this* process
-    r0 = resource.getrusage(resource.RUSAGE_SELF)
-    y = oracle.query(ct)
-    t_wall_1 = time.perf_counter()
-    t_cpu_1 = time.process_time()
-    r1 = resource.getrusage(resource.RUSAGE_SELF)
+    t_wall0 = time.perf_counter_ns()
+    t_thr0 = time.thread_time_ns()  # CPU time for *this* thread only
+    r0 = resource.getrusage(resource.RUSAGE_THREAD)
 
-    wall_ms = (t_wall_1 - t_wall_0) * 1e3
-    cpu_ms = (t_cpu_1 - t_cpu_0) * 1e3  # user+sys
-    vol_cs = r1.ru_nvcsw - r0.ru_nvcsw  # voluntary context switches
-    print(f"wall={wall_ms:7.3f} ms  cpu={cpu_ms:7.3f} ms  voluntary_ctx_sw={vol_cs}")
+    y = oracle.query(ct)
+
+    t_thr1 = time.thread_time_ns()
+    r1 = resource.getrusage(resource.RUSAGE_THREAD)
+    t_wall1 = time.perf_counter_ns()
+
+    print(
+        f"wall={(t_wall1 - t_wall0) / 1e6:.3f} ms  "
+        f"thread_cpu={(t_thr1 - t_thr0) / 1e6:.3f} ms  "
+        f"utime={(r1.ru_utime - r0.ru_utime) * 1e3:.3f} ms  "
+        f"sys={(r1.ru_stime - r0.ru_stime) * 1e3:.3f} ms  "
+        f"vol={r1.ru_nvcsw - r0.ru_nvcsw}  invol={r1.ru_nivcsw - r0.ru_nivcsw}"
+    )
     return y
 
 
