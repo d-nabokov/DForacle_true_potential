@@ -1,6 +1,18 @@
+import os
+
+for v in (
+    "OMP_NUM_THREADS",
+    "OPENBLAS_NUM_THREADS",
+    "MKL_NUM_THREADS",
+    "VECLIB_MAXIMUM_THREADS",  # Apple Accelerate
+    "NUMEXPR_NUM_THREADS",
+    "BLIS_NUM_THREADS",
+    "RAYON_NUM_THREADS",
+):
+    os.environ.setdefault(v, "1")
+
 import argparse
 import itertools as it
-import os
 import pickle
 import random
 import sys
@@ -642,7 +654,7 @@ for key_idx in range(test_keys):
                     oracle,
                 )
                 y = oracle.query(ct)
-                if batch_no == 0 and check_pos_in_batch < 30:
+                if batch_no == 0:
                     enc_idx = 0
                     for var_idx in check_idxs:
                         enc_idx = enc_idx * coef_support_size + (sk[var_idx] + ETA)
