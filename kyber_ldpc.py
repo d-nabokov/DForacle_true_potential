@@ -483,7 +483,7 @@ for key_idx in range(test_keys):
     # Either create a new secret key to simulate calls or obtain a real one for
     # difference computation
     if cfg.simulate_oracle:
-        sk = sample_secret_coefs(sk_len)
+        sk = sample_secret_coefs(sk_len, ETA)
     else:
         # we should only go here only after long search of compound evsets are done,
         # so, secret key should be already written to file
