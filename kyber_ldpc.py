@@ -3,6 +3,7 @@ import itertools as it
 import os
 import pickle
 import random
+import resource
 import sys
 import time
 from collections import defaultdict
@@ -83,6 +84,22 @@ if platform.system() == "Darwin" and (
     QOS_CLASS_USER_INTERACTIVE = 0x21  # see <pthread/qos.h>
     if libc.pthread_set_qos_class_self_np(QOS_CLASS_USER_INTERACTIVE, 0) != 0:
         raise OSError(ctypes.get_errno(), "pthread_set_qos_class_self_np failed")
+
+
+def timed_query(oracle, ct):
+    t_wall_0 = time.perf_counter()
+    t_cpu_0 = time.process_time()  # user+sys time for *this* process
+    r0 = resource.getrusage(resource.RUSAGE_SELF)
+    y = oracle.query(ct)
+    t_wall_1 = time.perf_counter()
+    t_cpu_1 = time.process_time()
+    r1 = resource.getrusage(resource.RUSAGE_SELF)
+
+    wall_ms = (t_wall_1 - t_wall_0) * 1e3
+    cpu_ms = (t_cpu_1 - t_cpu_0) * 1e3  # user+sys
+    vol_cs = r1.ru_nvcsw - r0.ru_nvcsw  # voluntary context switches
+    print(f"wall={wall_ms:7.3f} ms  cpu={cpu_ms:7.3f} ms  voluntary_ctx_sw={vol_cs}")
+    return y
 
 
 def is_in(x, lst: list):
@@ -641,7 +658,8 @@ for key_idx in range(test_keys):
                     check_idxs,
                     oracle,
                 )
-                y = oracle.query(ct)
+                y = timed_query(oracle, ct)
+                # y = oracle.query(ct)
                 if batch_no == 0 and check_pos_in_batch < 30:
                     enc_idx = 0
                     for var_idx in check_idxs:
