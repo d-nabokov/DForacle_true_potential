@@ -3,7 +3,6 @@ import itertools as it
 import os
 import pickle
 import random
-import resource
 import sys
 import threading
 import time
@@ -12,7 +11,6 @@ from dataclasses import dataclass
 from math import comb, log, prod
 
 import numpy as np
-import psutil
 
 sys.path.append("../SCA-LDPC/simulate-with-python")
 
@@ -88,21 +86,18 @@ if platform.system() == "Darwin" and (
         raise OSError(ctypes.get_errno(), "pthread_set_qos_class_self_np failed")
 
 
-proc = psutil.Process(os.getpid())
-me_tid = threading.get_native_id()
-
-
 def timed_query(oracle, ct):
     wall0 = time.perf_counter_ns()
-    thr0 = next(t for t in proc.threads() if t.id == me_tid)
+    cpu0 = time.thread_time_ns()  # this thread only
+
     y = oracle.query(ct)
-    thr1 = next(t for t in proc.threads() if t.id == me_tid)
+
+    cpu1 = time.thread_time_ns()
     wall1 = time.perf_counter_ns()
 
-    cpu_ms = (
-        thr1.user_time + thr1.system_time - thr0.user_time - thr0.system_time
-    ) * 1e3
-    print(f"wall={(wall1 - wall0) / 1e6:8.3f} ms   thread_cpu={cpu_ms:8.3f} ms")
+    print(
+        f"wall={(wall1 - wall0) / 1e6:.3f} ms  thread_cpu={(cpu1 - cpu0) / 1e6:.3f} ms"
+    )
     return y
 
 
@@ -475,8 +470,10 @@ random.seed(cfg.seed)
 if not cfg.simulate_oracle and cfg.keys_to_test > 1:
     raise ValueError("Currently can recover only one key not from simulation")
 
+print(f"threads at the beginning: {threading.active_count()}")
 if not cfg.simulate_oracle:
     oracle = KyberOracle("127.0.0.1", cfg.port)
+    print(f"threads after oracle setup: {threading.active_count()}")
 
 ct_info = open("ct_info.txt", "wt")
 y_statistic = defaultdict(int)
@@ -662,6 +659,7 @@ for key_idx in range(test_keys):
                     check_idxs,
                     oracle,
                 )
+                print(f"threads at query phase: {threading.active_count()}")
                 y = timed_query(oracle, ct)
                 # y = oracle.query(ct)
                 if batch_no == 0 and check_pos_in_batch < 30:
