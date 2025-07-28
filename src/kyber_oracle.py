@@ -30,21 +30,6 @@ def recv_exact(sock: socket.socket, n: int) -> bytes:
     return bytes(data)
 
 
-def who_is_busy(interval=0.1):
-    p = psutil.Process(os.getpid())
-    t0 = {t.id: (t.user_time + t.system_time) for t in p.threads()}
-    time.sleep(interval)
-    t1 = {t.id: (t.user_time + t.system_time) for t in p.threads()}
-    busy = sorted(
-        ((tid, (t1.get(tid, 0) - t0.get(tid, 0)) / interval) for tid in t1),
-        key=lambda x: x[1],
-        reverse=True,
-    )
-    print("TID   CPU%")
-    for tid, frac in busy[:8]:
-        print(f"{tid:5d} {frac * 100:5.1f}")
-
-
 class KyberOracle:
     """Wraps the blocking TCP conversation with the Rust oracle."""
 
@@ -91,7 +76,6 @@ class KyberOracle:
 
         self._sock.sendall(b"\x00")  # continuation flag
         self._sock.sendall(ct)  # ciphertext
-        who_is_busy()
         return recv_exact(self._sock, 1)[0]
 
     def close(self):
