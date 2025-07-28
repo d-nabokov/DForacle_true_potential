@@ -11,10 +11,24 @@ for v in (
 ):
     os.environ.setdefault(v, "1")
 
+import os
+
+for v in (
+    "OMP_NUM_THREADS",
+    "OPENBLAS_NUM_THREADS",
+    "MKL_NUM_THREADS",
+    "VECLIB_MAXIMUM_THREADS",  # Apple Accelerate
+    "NUMEXPR_NUM_THREADS",
+    "BLIS_NUM_THREADS",
+    "RAYON_NUM_THREADS",
+):
+    os.environ.setdefault(v, "1")
+
 import argparse
 import itertools as it
 import pickle
 import random
+import resource
 import sys
 import time
 from collections import defaultdict
@@ -22,6 +36,7 @@ from dataclasses import dataclass
 from math import comb, log, prod
 
 import numpy as np
+import psutil
 
 sys.path.append("../SCA-LDPC/simulate-with-python")
 
@@ -95,6 +110,22 @@ if platform.system() == "Darwin" and (
     QOS_CLASS_USER_INTERACTIVE = 0x21  # see <pthread/qos.h>
     if libc.pthread_set_qos_class_self_np(QOS_CLASS_USER_INTERACTIVE, 0) != 0:
         raise OSError(ctypes.get_errno(), "pthread_set_qos_class_self_np failed")
+
+
+def timed_query(oracle, ct):
+    t_wall_0 = time.perf_counter()
+    t_cpu_0 = time.process_time()  # user+sys time for *this* process
+    r0 = resource.getrusage(resource.RUSAGE_SELF)
+    y = oracle.query(ct)
+    t_wall_1 = time.perf_counter()
+    t_cpu_1 = time.process_time()
+    r1 = resource.getrusage(resource.RUSAGE_SELF)
+
+    wall_ms = (t_wall_1 - t_wall_0) * 1e3
+    cpu_ms = (t_cpu_1 - t_cpu_0) * 1e3  # user+sys
+    vol_cs = r1.ru_nvcsw - r0.ru_nvcsw  # voluntary context switches
+    print(f"wall={wall_ms:7.3f} ms  cpu={cpu_ms:7.3f} ms  voluntary_ctx_sw={vol_cs}")
+    return y
 
 
 def is_in(x, lst: list):
