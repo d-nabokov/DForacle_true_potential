@@ -657,12 +657,13 @@ for key_idx in range(test_keys):
                 )
                 y = oracle.query(ct)
                 pr_oracle.oracle_calls += 1
+
                 enc_idx = 0
                 for var_idx in check_idxs:
                     enc_idx = enc_idx * coef_support_size + (sk[var_idx] + ETA)
                 x = encoding[enc_idx]
                 print(
-                    f"{check_pos_in_batch}: secret variables: {check_idxs}",
+                    f"{check_pos_in_batch}: secret variables: {check_idxs}, z_values: {z_values}, threshold: {threshold}",
                     file=ct_info,
                 )
                 print(
