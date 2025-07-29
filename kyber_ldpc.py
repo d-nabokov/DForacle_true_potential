@@ -407,12 +407,19 @@ for key_idx in range(test_keys):
                         oracle,
                     )
                     response = oracle.query(ct)
+
+                    z_values_arr = build_z_values_arr(z_values, enabled, signs)
+                    expected = []
+                    s_subset = list(sk[var_idx] for var_idx in check_idxs)
+                    for z_values, threshold in zip(z_values_arr, thresholds):
+                        uv = np.dot(z_values, s_subset)
+                        expected.append((uv > (threshold * SMALLEST_THRESHOLD)))
                     print(
                         f"{ct_idx}: secret variables: {check_idxs}, z_values: {z_values}, thresholds: {thresholds}, enabled: {enabled}, signs: {signs}",
                         file=ct_info,
                     )
                     print(
-                        f"x==y?:{x[ineq_idx] == response}; x={x[ineq_idx]}, y={response}",
+                        f"x==y?:{x[ineq_idx] == response}; x={x[ineq_idx]}, y={response}, expectation for each inequality from rotations: {expected}",
                         file=ct_info,
                     )
                     print(", ".join(f"0x{b:02x}" for b in ct), file=ct_info)
