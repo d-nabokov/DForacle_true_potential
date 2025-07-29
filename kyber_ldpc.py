@@ -379,7 +379,8 @@ for key_idx in range(test_keys):
             )
 
         all_checks.extend(checks)
-        for check_pos, check_idxs in enumerate(checks):
+        ct_idx = 0
+        for check_idxs in checks:
             if cfg.simulate_oracle:
                 enc_idx = 0
                 for var_idx in check_idxs:
@@ -407,7 +408,7 @@ for key_idx in range(test_keys):
                     )
                     response = oracle.query(ct)
                     print(
-                        f"{check_pos}: secret variables: {check_idxs}, z_values: {z_values}, thresholds: {thresholds}, enabled: {enabled}, signs: {signs}",
+                        f"{ct_idx}: secret variables: {check_idxs}, z_values: {z_values}, thresholds: {thresholds}, enabled: {enabled}, signs: {signs}",
                         file=ct_info,
                     )
                     print(
@@ -416,6 +417,7 @@ for key_idx in range(test_keys):
                     )
                     print(", ".join(f"0x{b:02x}" for b in ct), file=ct_info)
                     pr_oracle.oracle_calls += 1
+                    ct_idx += 1
                     y.append(response)
             y_idx = bit_tuple_to_int(y)
             pmf = all_y_pmf[y_idx]
