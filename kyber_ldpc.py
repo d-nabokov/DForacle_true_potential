@@ -828,6 +828,8 @@ for key_idx in range(test_keys):
     differences_arr.append(differences)
     total_oracle_calls += pr_oracle.oracle_calls
 
+if not cfg.simulate_oracle:
+    oracle.close()
 print(f"Average number of incorrect coefficients = {np.average(differences_arr)}")
 print(f"Difference array: {differences_arr}")
 # print(f"Lost information: {lost_info_arr}")
