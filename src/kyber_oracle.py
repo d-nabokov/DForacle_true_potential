@@ -59,7 +59,7 @@ class KyberOracle:
         # for offset of message which has a one at sensitive for DMP
         # position, but we XOR that position with 1, so we end up
         # with zero
-        for i in range(7, 56):
+        for i in range(18, 56):
             rbit = (self.rand_mask[i // 8] >> (i & 7)) & 1
             mabit = (self.masked_addr[i // 8] >> (i & 7)) & 1
             mbit = rbit ^ mabit
@@ -110,11 +110,11 @@ def build_polymsg_from_oracle(oracle, val_for_one, use_random) -> Poly:
 
     for pointer_idx in range(4):
         # Extra entropy for blocks 1-3 (block 0 is deterministic)
-        extra_rand64 = 0
+        extra_rand64 = 1 << pointer_idx
         if use_random and pointer_idx != target_ptr_idx:
             # keep regenerating until it does NOT cancel the message bit
             while True:
-                extra_rand64 = random.getrandbits(64) & 0xFFFF00
+                extra_rand64 ^= random.getrandbits(64) & 0xFFFF00
                 extra_rand64 ^= 1 << oracle.lowest_message_bit
                 if extra_rand64:
                     break
