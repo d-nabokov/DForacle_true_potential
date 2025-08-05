@@ -71,14 +71,14 @@ class KyberOracle:
 
     def query(self, ct: bytes) -> int:
         """
-        Send one ciphertext to Rust and return its single-byte reply.
+        Send one ciphertext to Rust and return a probability of bit equal to 0.
         """
         assert len(ct) == CRYPTO_CIPHERTEXTBYTES, "ciphertext size mismatch"
 
         self._sock.sendall(b"\x00")  # continuation flag
         self._sock.sendall(ct)  # ciphertext
         raw_p0 = recv_exact(self._sock, 8)
-        return struct.unpack(">d", raw_p0)
+        return struct.unpack(">d", raw_p0)[0]
 
     def close(self):
         """Tell Rust we're done (send non-zero) and close."""
