@@ -335,6 +335,7 @@ if not cfg.simulate_oracle and cfg.keys_to_test > 1:
 
 if not cfg.simulate_oracle:
     oracle = KyberOracle("127.0.0.1", cfg.port)
+    num_accurate_calls = 0
 
 ct_info = open("ct_info.txt", "wt")
 y_statistic = defaultdict(int)
@@ -435,6 +436,9 @@ for key_idx in range(test_keys):
                     list(pr_cond_yx_soft(y_soft, x) for x in check_encoding)
                 )
                 y = decision_from_soft(y_soft)
+                for x_val, y_val in zip(x, y):
+                    if x_val == y_val:
+                        num_accurate_calls += 1
             y_idx = bit_tuple_to_int(y)
             pmf = all_y_pmf[y_idx]
 
@@ -561,6 +565,8 @@ for key_idx in range(test_keys):
                 for var_idx in check_idxs:
                     enc_idx = enc_idx * coef_support_size + (sk[var_idx] + ETA)
                 x = encoding[enc_idx]
+                if x == y:
+                    num_accurate_calls += 1
                 print(
                     f"{check_pos_in_batch}: secret variables: {check_idxs}, z_values: {z_values}, threshold: {threshold}",
                     file=ct_info,
@@ -757,6 +763,9 @@ for key_idx in range(test_keys):
                     list(pr_cond_yx_soft(y_soft, x) for x in encoding)
                 )
                 y = decision_from_soft(y_soft)
+                for x_val, y_val in zip(x, y):
+                    if x_val == y_val:
+                        num_accurate_calls += 1
             for y_val in y:
                 y_statistic[y_val] += 1
 
@@ -888,6 +897,11 @@ print(
 print(
     f"---- Total time spend in batches {time_to_ms_per_key(time_batches_total, test_keys)}"
 )
+
+if not cfg.simulate_oracle:
+    print(
+        f"Number of correct oracle calls is {num_accurate_calls} out of {total_oracle_calls} leading to empirical accuracy {num_accurate_calls / total_oracle_calls:.4f}"
+    )
 
 print(f"{y_statistic=}")
 # with open("configuration.data", "wt") as f:
