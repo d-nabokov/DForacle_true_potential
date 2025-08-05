@@ -3,6 +3,7 @@ import random
 import socket
 import struct
 import time
+from math import exp, log
 from typing import List, Sequence, Union
 
 import psutil
@@ -76,7 +77,8 @@ class KyberOracle:
 
         self._sock.sendall(b"\x00")  # continuation flag
         self._sock.sendall(ct)  # ciphertext
-        return recv_exact(self._sock, 1)[0]
+        raw_p0 = recv_exact(self._sock, 8)
+        return struct.unpack(">d", raw_p0)
 
     def close(self):
         """Tell Rust we're done (send non-zero) and close."""
@@ -218,3 +220,17 @@ def build_full_rotate_ciphertext(
         v_offset = rotation_offset * i + oracle.lowest_message_bit
         v.coeffs[v_offset] += threshold_k * k_step
     return pack_ciphertext(u, v)
+
+
+def decision_from_soft(y_soft):
+    return tuple(int(y_pr >= 0.5) for y_pr in y_soft)
+
+
+def pr_cond_yx_soft(y_soft, x):
+    log_prob = 0.0
+    eps = 1e-300
+    for i in range(len(x)):
+        p_soft = min(max(y_soft[i], eps), 1.0 - eps)
+        p_soft = p_soft if x[i] == 0 else 1.0 - p_soft
+        log_prob += log(p_soft)
+    return exp(log_prob)

@@ -78,6 +78,8 @@ from src.kyber_oracle import (
     KyberOracle,
     build_arbitrary_combination_ciphertext,
     build_full_rotate_ciphertext,
+    decision_from_soft,
+    pr_cond_yx_soft,
     read_sk,
 )
 from src.ldpc import (
@@ -387,8 +389,11 @@ for key_idx in range(test_keys):
                     enc_idx = enc_idx * coef_support_size + (sk[var_idx] + ETA)
                 x = check_encoding[enc_idx]
                 y = sample_coef_static(x, pr_oracle)
+                channel_pmf = np.array(
+                    list(pr_cond_yx(y, x, pr_oracle) for x in check_encoding)
+                )
             else:
-                y = []
+                y_soft = []
                 enc_idx = 0
                 for var_idx in check_idxs:
                     enc_idx = enc_idx * coef_support_size + (sk[var_idx] + ETA)
@@ -425,13 +430,14 @@ for key_idx in range(test_keys):
                     print(", ".join(f"0x{b:02x}" for b in ct), file=ct_info)
                     pr_oracle.oracle_calls += 1
                     ct_idx += 1
-                    y.append(response)
+                    y_soft.append(response)
+                channel_pmf = np.array(
+                    list(pr_cond_yx_soft(y_soft, x) for x in check_encoding)
+                )
+                y = decision_from_soft(y_soft)
             y_idx = bit_tuple_to_int(y)
             pmf = all_y_pmf[y_idx]
 
-            channel_pmf = np.array(
-                list(pr_cond_yx(y, x, pr_oracle) for x in check_encoding)
-            )
             channel_pmf /= sum(channel_pmf)
             check_variables.append(channel_pmf)
 
@@ -532,6 +538,9 @@ for key_idx in range(test_keys):
                     enc_idx = enc_idx * coef_support_size + (sk[var_idx] + ETA)
                 x = encoding[enc_idx]
                 y = pr_oracle.predict_bit(x, 0)
+                channel_pmf = np.array(
+                    list(pr_oracle.prob_of(x, y, 0) for x in encoding)
+                )
             else:
                 ct = build_arbitrary_combination_ciphertext(
                     z_values,
@@ -541,8 +550,12 @@ for key_idx in range(test_keys):
                     check_idxs,
                     oracle,
                 )
-                y = oracle.query(ct)
+                y_soft = oracle.query(ct)
+                y = int(y_soft >= 0.5)
                 pr_oracle.oracle_calls += 1
+                channel_pmf = np.array(
+                    list(y_soft if x == 0 else 1.0 - y_soft for x in encoding)
+                )
 
                 enc_idx = 0
                 for var_idx in check_idxs:
@@ -563,7 +576,7 @@ for key_idx in range(test_keys):
                 print(", ".join(f"0x{b:02x}" for b in ct), file=ct_info)
 
             y_statistic[y] += 1
-            channel_pmf = np.array(list(pr_oracle.prob_of(x, y, 0) for x in encoding))
+
             channel_pmf /= sum(channel_pmf)
             check_variables.append(channel_pmf)
 
@@ -723,8 +736,11 @@ for key_idx in range(test_keys):
                     enc_idx = enc_idx * coef_support_size + (sk[var_idx] + ETA)
                 x = encoding[enc_idx]
                 y = sample_coef_static(x, pr_oracle)
+                channel_pmf = np.array(
+                    list(pr_cond_yx(y, x, pr_oracle) for x in encoding)
+                )
             else:
-                y = []
+                y_soft = []
                 for z_values in z_values_arr:
                     ct = build_arbitrary_combination_ciphertext(
                         z_values,
@@ -736,11 +752,14 @@ for key_idx in range(test_keys):
                     )
                     response = oracle.query(ct)
                     pr_oracle.oracle_calls += 1
-                    y.append(response)
+                    y_soft.append(response)
+                channel_pmf = np.array(
+                    list(pr_cond_yx_soft(y_soft, x) for x in encoding)
+                )
+                y = decision_from_soft(y_soft)
             for y_val in y:
                 y_statistic[y_val] += 1
 
-            channel_pmf = np.array(list(pr_cond_yx(y, x, pr_oracle) for x in encoding))
             channel_pmf /= sum(channel_pmf)
             check_variables.append(channel_pmf)
     time_batches_total += time.perf_counter_ns() - t2
