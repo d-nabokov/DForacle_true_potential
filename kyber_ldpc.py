@@ -698,6 +698,10 @@ for key_idx in range(test_keys):
                 actual = np.argmax(actual_pmf) - ETA
                 if expect != actual:
                     print(f"{i}: {expect=}, {actual=}, {list_small_str(actual_pmf)}")
+        if cfg.max_additional_batches == 0:
+            check_variables_intermediate = np.array(check_variables, dtype=np.float32)
+            epsilon = 1e-20
+            check_variables_intermediate[check_variables_intermediate == 0] = epsilon
         sk_decoded_marginals = ldpc_decode(
             all_checks,
             secret_variables,
