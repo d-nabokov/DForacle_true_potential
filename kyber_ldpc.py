@@ -394,6 +394,13 @@ for key_idx in range(test_keys):
                 channel_pmf = np.array(
                     list(pr_cond_yx(y, x, pr_oracle) for x in check_encoding)
                 )
+                y_idx = bit_tuple_to_int(y)
+                pmf = all_y_pmf[y_idx]
+                t1 = time.perf_counter_ns()
+                s_marginal = marginal_pmf(pmf, joint_weight)
+                for i, var_idx in enumerate(check_idxs):
+                    sk_decoded_marginals[var_idx] = s_marginal[i]
+                time_base_marginals += time.perf_counter_ns() - t1
             else:
                 y_soft = []
                 enc_idx = 0
@@ -440,18 +447,25 @@ for key_idx in range(test_keys):
                 for x_val, y_val in zip(x, y):
                     if x_val == y_val:
                         num_accurate_calls += 1
-            y_idx = bit_tuple_to_int(y)
-            pmf = all_y_pmf[y_idx]
+                check_variables_intermediate = np.array(
+                    check_variables, dtype=np.float32
+                )
+                epsilon = 1e-20
+                check_variables_intermediate[check_variables_intermediate == 0] = (
+                    epsilon
+                )
+                sk_decoded_marginals = ldpc_decode(
+                    all_checks,
+                    secret_variables,
+                    check_variables_intermediate,
+                    joint_weight,
+                    2,
+                    ETA,
+                    layered=True,
+                )
 
             channel_pmf /= sum(channel_pmf)
             check_variables.append(channel_pmf)
-
-            # check_variables.append(pmf)
-            t1 = time.perf_counter_ns()
-            s_marginal = marginal_pmf(pmf, joint_weight)
-            for i, var_idx in enumerate(check_idxs):
-                sk_decoded_marginals[var_idx] = s_marginal[i]
-            time_base_marginals += time.perf_counter_ns() - t1
         time_base += time.perf_counter_ns() - t0
 
         if cfg.print_intermediate_info:
