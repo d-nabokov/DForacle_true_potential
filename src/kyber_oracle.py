@@ -222,6 +222,11 @@ def build_full_rotate_ciphertext(
     return pack_ciphertext(u, v)
 
 
+def single_decision_from_soft(pr0):
+    # pr >= 0.5 means 0, otherwise 1
+    return int(pr0 < 0.5)
+
+
 def decision_from_soft(y_soft):
     # pr >= 0.5 means 0, otherwise 1
     return tuple(int(y_pr < 0.5) for y_pr in y_soft)

@@ -81,6 +81,7 @@ from src.kyber_oracle import (
     decision_from_soft,
     pr_cond_yx_soft,
     read_sk,
+    single_decision_from_soft,
 )
 from src.ldpc import (
     bit_tuple_to_int,
@@ -555,7 +556,7 @@ for key_idx in range(test_keys):
                     oracle,
                 )
                 y_soft = oracle.query(ct)
-                y = int(y_soft >= 0.5)
+                y = single_decision_from_soft(y_soft)
                 pr_oracle.oracle_calls += 1
                 channel_pmf = np.array(
                     list(y_soft if x == 0 else 1.0 - y_soft for x in encoding)
