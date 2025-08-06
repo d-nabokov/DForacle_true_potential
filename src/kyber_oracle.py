@@ -223,7 +223,8 @@ def build_full_rotate_ciphertext(
 
 
 def decision_from_soft(y_soft):
-    return tuple(int(y_pr >= 0.5) for y_pr in y_soft)
+    # pr >= 0.5 means 0, otherwise 1
+    return tuple(int(y_pr < 0.5) for y_pr in y_soft)
 
 
 def pr_cond_yx_soft(y_soft, x):
