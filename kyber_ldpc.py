@@ -767,6 +767,10 @@ for key_idx in range(test_keys):
                     list(pr_cond_yx_soft(y_soft, x) for x in encoding)
                 )
                 y = decision_from_soft(y_soft)
+                enc_idx = 0
+                for var_idx in check_idxs:
+                    enc_idx = enc_idx * coef_support_size + (sk[var_idx] + ETA)
+                x = encoding[enc_idx]
                 for x_val, y_val in zip(x, y):
                     if x_val == y_val:
                         num_accurate_calls += 1
