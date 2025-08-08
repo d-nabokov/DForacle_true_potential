@@ -391,18 +391,8 @@ for key_idx in range(test_keys):
                     enc_idx = enc_idx * coef_support_size + (sk[var_idx] + ETA)
                 x = check_encoding[enc_idx]
                 y = sample_coef_static(x, pr_oracle)
-                channel_pmf = np.array(
-                    list(pr_cond_yx(y, x, pr_oracle) for x in check_encoding)
-                )
-                y_idx = bit_tuple_to_int(y)
-                pmf = all_y_pmf[y_idx]
-                t1 = time.perf_counter_ns()
-                s_marginal = marginal_pmf(pmf, joint_weight)
-                for i, var_idx in enumerate(check_idxs):
-                    sk_decoded_marginals[var_idx] = s_marginal[i]
-                time_base_marginals += time.perf_counter_ns() - t1
             else:
-                y_soft = []
+                y = []
                 enc_idx = 0
                 for var_idx in check_idxs:
                     enc_idx = enc_idx * coef_support_size + (sk[var_idx] + ETA)
@@ -439,33 +429,25 @@ for key_idx in range(test_keys):
                     print(", ".join(f"0x{b:02x}" for b in ct), file=ct_info)
                     pr_oracle.oracle_calls += 1
                     ct_idx += 1
-                    y_soft.append(response)
-                channel_pmf = np.array(
-                    list(pr_cond_yx_soft(y_soft, x) for x in check_encoding)
-                )
-                y = decision_from_soft(y_soft)
+                    y.append(response)
                 for x_val, y_val in zip(x, y):
                     if x_val == y_val:
                         num_accurate_calls += 1
-                check_variables_intermediate = np.array(
-                    check_variables, dtype=np.float32
-                )
-                epsilon = 1e-20
-                check_variables_intermediate[check_variables_intermediate == 0] = (
-                    epsilon
-                )
-                sk_decoded_marginals = ldpc_decode(
-                    all_checks,
-                    secret_variables,
-                    check_variables_intermediate,
-                    joint_weight,
-                    2,
-                    ETA,
-                    layered=True,
-                )
 
+            y_idx = bit_tuple_to_int(y)
+            pmf = all_y_pmf[y_idx]
+
+            channel_pmf = np.array(
+                list(pr_cond_yx(y, x, pr_oracle) for x in check_encoding)
+            )
             channel_pmf /= sum(channel_pmf)
             check_variables.append(channel_pmf)
+
+            t1 = time.perf_counter_ns()
+            s_marginal = marginal_pmf(pmf, joint_weight)
+            for i, var_idx in enumerate(check_idxs):
+                sk_decoded_marginals[var_idx] = s_marginal[i]
+            time_base_marginals += time.perf_counter_ns() - t1
         time_base += time.perf_counter_ns() - t0
 
         if cfg.print_intermediate_info:
@@ -557,9 +539,6 @@ for key_idx in range(test_keys):
                     enc_idx = enc_idx * coef_support_size + (sk[var_idx] + ETA)
                 x = encoding[enc_idx]
                 y = pr_oracle.predict_bit(x, 0)
-                channel_pmf = np.array(
-                    list(pr_oracle.prob_of(x, y, 0) for x in encoding)
-                )
             else:
                 ct = build_arbitrary_combination_ciphertext(
                     z_values,
@@ -569,12 +548,8 @@ for key_idx in range(test_keys):
                     check_idxs,
                     oracle,
                 )
-                y_soft = oracle.query(ct)
-                y = single_decision_from_soft(y_soft)
+                y = oracle.query(ct)
                 pr_oracle.oracle_calls += 1
-                channel_pmf = np.array(
-                    list(y_soft if x == 0 else 1.0 - y_soft for x in encoding)
-                )
 
                 enc_idx = 0
                 for var_idx in check_idxs:
@@ -598,6 +573,7 @@ for key_idx in range(test_keys):
 
             y_statistic[y] += 1
 
+            channel_pmf = np.array(list(pr_oracle.prob_of(x, y, 0) for x in encoding))
             channel_pmf /= sum(channel_pmf)
             check_variables.append(channel_pmf)
 
@@ -615,20 +591,9 @@ for key_idx in range(test_keys):
                 )
                 print(f"sk coefs={list(sk[var_idx] for var_idx in check_idxs)}")
                 print(f"x==y?:{x == y}; {x=}, {y=}")
-                # s_marginal = marginal_pmf(posterior_pmf, joint_weight)
-                # print(
-                #     f"improved marginal=[{','.join(map(lambda x: list_small_str(x, 5), s_marginal))}]"
-                # )
                 print(f"Simple enumeration of directions obtain {pr=} for {z_values=}")
-                # print(
-                #     f"Simple enumeration of 2 directions obtain {pr_y} for {z_values_arr=}, entropy={entropy(pr_y)}"
-                # )
                 print("============")
 
-            # configuration_probs[tuple(labels)].append(pr)
-
-        # if batch_no == additional_batches - 1:
-        #     break
         t0 = time.perf_counter_ns()
         check_variables_intermediate = np.array(check_variables, dtype=np.float32)
         epsilon = 1e-20
@@ -655,9 +620,6 @@ for key_idx in range(test_keys):
                 layered=False,
             )
         else:
-            # if batch_no == additional_batches - 1:
-            #     iterations = 2
-            # else:
             if cfg.use_random_shuffle:
                 iterations = 2
             else:
@@ -702,9 +664,6 @@ for key_idx in range(test_keys):
                 for i, (expect, actual_pmf) in enumerate(zip(sk, sk_decoded_marginals)):
                     if max(actual_pmf) < 0.8:
                         print(f"{i}: s_i = {expect}  {list_small_str(actual_pmf)}")
-        # print(f"LDPC intermediate output after batch {batch_no}:")
-        # for i, (expect, pmf) in enumerate(zip(sk, sk_decoded_marginals)):
-        #     print(f"{i}: sk_i={expect}, {list_small_str(pmf)}")
 
     if cfg.try_fix_unreliable_on_last_batch:
         if cfg.print_intermediate_info:
@@ -761,11 +720,8 @@ for key_idx in range(test_keys):
                     enc_idx = enc_idx * coef_support_size + (sk[var_idx] + ETA)
                 x = encoding[enc_idx]
                 y = sample_coef_static(x, pr_oracle)
-                channel_pmf = np.array(
-                    list(pr_cond_yx(y, x, pr_oracle) for x in encoding)
-                )
             else:
-                y_soft = []
+                y = []
                 for z_values in z_values_arr:
                     ct = build_arbitrary_combination_ciphertext(
                         z_values,
@@ -777,11 +733,7 @@ for key_idx in range(test_keys):
                     )
                     response = oracle.query(ct)
                     pr_oracle.oracle_calls += 1
-                    y_soft.append(response)
-                channel_pmf = np.array(
-                    list(pr_cond_yx_soft(y_soft, x) for x in encoding)
-                )
-                y = decision_from_soft(y_soft)
+                    y.append(response)
                 enc_idx = 0
                 for var_idx in check_idxs:
                     enc_idx = enc_idx * coef_support_size + (sk[var_idx] + ETA)
@@ -792,23 +744,10 @@ for key_idx in range(test_keys):
             for y_val in y:
                 y_statistic[y_val] += 1
 
+            channel_pmf = np.array(list(pr_cond_yx(y, x, pr_oracle) for x in encoding))
             channel_pmf /= sum(channel_pmf)
             check_variables.append(channel_pmf)
     time_batches_total += time.perf_counter_ns() - t2
-
-    # with open("sk_marginals", "wb") as f:
-    #     pickle.dump(sk_decoded_marginals, f)
-
-    # additional_check = all_checks[193]
-    # print(f"{additional_check=}")
-    # sk_subset = list(sk[var_idx] for var_idx in additional_check)
-    # print(f"{sk_subset=}")
-    # s_marginal = marginal_pmf(check_variables[193], joint_weight)
-    # print(f"marginal=[{','.join(map(lambda x: list_small_str(x, 5), s_marginal))}]")
-
-    # print("Trying to ignore base oracle calls")
-    # all_checks = all_checks[64 * 3 :]
-    # check_variables = check_variables[64 * 3 :]
 
     t0 = time.perf_counter_ns()
     check_variables = np.array(check_variables, dtype=np.float32)
@@ -836,7 +775,6 @@ for key_idx in range(test_keys):
         differences_for_batches.append(differences_for_batch)
         oracle_calls_for_batches.append(oracle_calls_for_batch)
 
-    # sk_decoded = sk_decoded_marginals
     if cfg.print_intermediate_info or cfg.print_diff:
         matrix = np.zeros((len(all_checks), sk_len), dtype=int)
         for row_idx, check in enumerate(all_checks):

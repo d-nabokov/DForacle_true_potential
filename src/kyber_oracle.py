@@ -60,7 +60,7 @@ class KyberOracle:
         # for offset of message which has a one at sensitive for DMP
         # position, but we XOR that position with 1, so we end up
         # with zero
-        for i in range(18, 56):
+        for i in range(14, 56):
             rbit = (self.rand_mask[i // 8] >> (i & 7)) & 1
             mabit = (self.masked_addr[i // 8] >> (i & 7)) & 1
             mbit = rbit ^ mabit
@@ -78,7 +78,9 @@ class KyberOracle:
         self._sock.sendall(b"\x00")  # continuation flag
         self._sock.sendall(ct)  # ciphertext
         raw_p0 = recv_exact(self._sock, 8)
-        return struct.unpack(">d", raw_p0)[0]
+        p0 = struct.unpack(">d", raw_p0)[0]
+        # ignore soft value
+        return single_decision_from_soft(p0)
 
     def close(self):
         """Tell Rust we're done (send non-zero) and close."""
