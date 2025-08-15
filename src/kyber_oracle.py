@@ -82,7 +82,7 @@ class KyberOracle:
         raw_p0 = recv_exact(self._sock, 8)
         raw_oracle_calls = recv_exact(self._sock, 4)
         p0 = struct.unpack(">d", raw_p0)[0]
-        oracle_calls = struct.unpack(">d", raw_oracle_calls)[0]
+        oracle_calls = struct.unpack(">I", raw_oracle_calls)[0]
         self.real_oracle_calls += oracle_calls
         # ignore soft value
         return single_decision_from_soft(p0)
