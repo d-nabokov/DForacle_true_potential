@@ -825,6 +825,7 @@ for key_idx in range(test_keys):
     total_oracle_calls += pr_oracle.oracle_calls
 
 if not cfg.simulate_oracle:
+    print(f"Real number of measurements used = {oracle.real_oracle_calls}")
     oracle.close()
 print(f"Average number of incorrect coefficients = {np.average(differences_arr)}")
 print(f"Difference array: {differences_arr}")

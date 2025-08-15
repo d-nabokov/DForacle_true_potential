@@ -35,6 +35,8 @@ class KyberOracle:
     """Wraps the blocking TCP conversation with the Rust oracle."""
 
     def __init__(self, host: str, port: int):
+        self.real_oracle_calls = 0
+
         self._listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self._listener.bind((host, port))
@@ -78,7 +80,10 @@ class KyberOracle:
         self._sock.sendall(b"\x00")  # continuation flag
         self._sock.sendall(ct)  # ciphertext
         raw_p0 = recv_exact(self._sock, 8)
+        raw_oracle_calls = recv_exact(self._sock, 4)
         p0 = struct.unpack(">d", raw_p0)[0]
+        oracle_calls = struct.unpack(">d", raw_oracle_calls)[0]
+        self.real_oracle_calls += oracle_calls
         # ignore soft value
         return single_decision_from_soft(p0)
 

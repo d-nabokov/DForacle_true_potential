@@ -104,8 +104,8 @@ def main():
             prefix = args.prefix + "_"
         else:
             prefix = ""
-        fig1.savefig(f"{prefix}diff_vs_oracle.png", bbox_inches="tight")
-        fig2.savefig(f"{prefix}success_vs_oracle.png", bbox_inches="tight")
+        fig1.savefig(f"{prefix}diff_vs_oracle.pdf", bbox_inches="tight")
+        fig2.savefig(f"{prefix}success_vs_oracle.pdf", bbox_inches="tight")
 
     plt.show()
 
