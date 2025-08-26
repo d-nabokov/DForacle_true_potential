@@ -12,6 +12,7 @@ import ast
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
 import numpy as np
 
 DIFF_START = "Difference data for batches: "
@@ -47,27 +48,37 @@ def build_graphs(
     oracle_mean = oracle_calls_data.mean(axis=0)
 
     # ---------- Graph 1 ----------
-    fig1, ax1 = plt.subplots()
-    ax1.plot(oracle_mean, diff_mean, marker="o", markersize=2)
-    ax1.set_xlabel("Average number of oracle calls")
-    ax1.set_ylabel("Average Hamming distance to correct key")
-    # ax1.set_title("Graph 1: Mean difference vs oracle calls")
+    fig1, ax1 = plt.subplots(figsize=(8, 6))
+    ax1.plot(oracle_mean, diff_mean, marker="o", markersize=5, lw=2)
+    ax1.set_xlabel("Average Number of Traces", fontsize=26)
+    ax1.set_ylabel("Avg. Hamming Distance", fontsize=26)
+    ax1.tick_params(axis="both", which="major", labelsize=20)
+    ax1.xaxis.set_major_locator(mticker.MaxNLocator(nbins=8, integer=True))
     ax1.grid(True)
 
-    fig2, ax2 = plt.subplots()
+    fig2, ax2 = plt.subplots(figsize=(8, 6))
     success_full = (difference_data == 0).mean(axis=0)
-    ax2.plot(oracle_mean, success_full, marker="o", label="dist = 0", markersize=2)
+    ax2.plot(
+        oracle_mean, success_full, marker="o", label="dist = 0", markersize=5, lw=2
+    )
     for dist in distances:
         success_le = (difference_data <= dist).mean(axis=0)
-        ax2.plot(oracle_mean, success_le, marker="x", label=f"dist ≤ {dist}")
+        ax2.plot(
+            oracle_mean,
+            success_le,
+            marker="x",
+            label=f"dist ≤ {dist}",
+            markersize=6,
+            lw=2,
+        )
 
-    ax2.set_xlabel("Average number of oracle calls")
-    ax2.set_ylabel("Success probability")
-    # ax2.set_title("Graph 2: Key-recovery success vs oracle calls")
-    ax2.set_ylim(0, 1.05)
-    ax2.set_xlim(left=1600, right=(oracle_mean[-1] + 20))
+    ax2.set_xlabel("Average Number of Traces", fontsize=26)
+    ax2.set_ylabel("Success Probability", fontsize=26)
+    ax2.tick_params(axis="both", which="major", labelsize=20)
+    ax2.set_ylim(-0.02, 1.05)
+    ax2.set_xlim(left=1800, right=(oracle_mean[-1] + 20))
     ax2.grid(True)
-    ax2.legend()
+    ax2.legend(fontsize=26)
 
     return fig1, fig2
 
