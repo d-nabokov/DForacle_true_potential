@@ -1,0 +1,30 @@
+Setting QOS class to user-interactive
+Theory suggest that the minimum number of calls is 1674.1539623687893
+Kyber-oracle server ready on 127.0.0.1:3334, waiting for Rust…
+Rust oracle connected from ('127.0.0.1', 63611)
+rand_mask=b'Vt\xb1\xfd\xac\x08\xd5\x1c'
+masked_addr=b'V\xba\x1d^\xad\x08\xd5\x1c'
+target_addr=00ceaca301000000
+lowest_message_bit=14
+key 0
+155: expect=0, actual=np.int64(1), [0.000, 0.000, 0.000, 0.000, 1.000, 0.000, 0.000], checks for var: 16
+179: expect=-1, actual=np.int64(-2), [0.009, 0.984, 0.007, 0.000, 0.000, 0.000, 0.000], checks for var: 19
+196: expect=-2, actual=np.int64(-1), [0.099, 0.274, 0.627, 0.000, 0.000, 0.000, 0.000], checks for var: 20
+312: expect=0, actual=np.int64(1), [0.000, 0.000, 0.000, 0.066, 0.933, 0.001, 0.000], checks for var: 14
+351: expect=3, actual=np.int64(2), [0.000, 0.000, 0.000, 0.000, 0.000, 0.999, 0.001], checks for var: 14
+356: expect=2, actual=np.int64(1), [0.000, 0.000, 0.000, 0.000, 0.976, 0.020, 0.003], checks for var: 17
+474: expect=0, actual=np.int64(-1), [0.000, 0.000, 0.892, 0.108, 0.000, 0.000, 0.000], checks for var: 19
+Real number of measurements used = 10112
+Average number of incorrect coefficients = 7.0
+Difference array: [7]
+Average oracle calls used = 2975.0
+Timing information (per key) in ms
+---- conditional pmf computation 0
+---- LDPC decoder 72618.855833
+---- LDPC decoder during batches 79054.563917
+---- Base case handling (everything) 19541.832542
+---- Computation of marginals for base 348.758957
+---- Enumerating promising directions 67229.150533
+---- Total time spend in batches 272655.576375
+Number of correct oracle calls is 2723 out of 2975 leading to empirical accuracy 0.9153
+y_statistic=defaultdict(<class 'int'>, {0: 971, 1: 1108})

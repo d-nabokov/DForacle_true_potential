@@ -1,0 +1,23 @@
+Setting QOS class to user-interactive
+Theory suggest that the minimum number of calls is 1674.1539623687893
+Kyber-oracle server ready on 127.0.0.1:3334, waiting for Rust…
+Rust oracle connected from ('127.0.0.1', 63383)
+rand_mask=b'\xff\xa0\xb5\x05$\xa7dz'
+masked_addr=b'\xff\xc4\x11\xa6%\xa7dz'
+target_addr=0064a4a301000000
+lowest_message_bit=14
+key 0
+Real number of measurements used = 5189
+Average number of incorrect coefficients = 0.0
+Difference array: [0]
+Average oracle calls used = 2210.0
+Timing information (per key) in ms
+---- conditional pmf computation 0
+---- LDPC decoder 44126.777875
+---- LDPC decoder during batches 67779.729584
+---- Base case handling (everything) 15342.166417
+---- Computation of marginals for base 297.265002
+---- Enumerating promising directions 38992.614751
+---- Total time spend in batches 179647.0375
+Number of correct oracle calls is 2137 out of 2210 leading to empirical accuracy 0.9670
+y_statistic=defaultdict(<class 'int'>, {1: 703, 0: 611})

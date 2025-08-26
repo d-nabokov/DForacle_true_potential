@@ -1,0 +1,52 @@
+Setting QOS class to user-interactive
+Theory suggest that the minimum number of calls is 1674.1539623687893
+Kyber-oracle server ready on 127.0.0.1:3334, waiting for Rust…
+Rust oracle connected from ('127.0.0.1', 64939)
+rand_mask=b'\xf2V\x87v\xec\x8b\xf17'
+masked_addr=b'\xf2a*\xd5\xed\x8b\xf17'
+target_addr=0037ada301000000
+lowest_message_bit=16
+key 0
+4: expect=2, actual=np.int64(3), [0.000, 0.000, 0.000, 0.000, 0.000, 0.007, 0.993], checks for var: 18
+5: expect=2, actual=np.int64(3), [0.000, 0.000, 0.000, 0.000, 0.000, 0.039, 0.961], checks for var: 19
+18: expect=0, actual=np.int64(1), [0.000, 0.000, 0.000, 0.077, 0.905, 0.018, 0.000], checks for var: 19
+33: expect=2, actual=np.int64(0), [0.000, 0.000, 0.000, 0.456, 0.422, 0.122, 0.000], checks for var: 20
+60: expect=-1, actual=np.int64(-2), [0.001, 0.891, 0.108, 0.000, 0.000, 0.000, 0.000], checks for var: 19
+71: expect=0, actual=np.int64(1), [0.001, 0.126, 0.003, 0.067, 0.802, 0.000, 0.000], checks for var: 19
+77: expect=-2, actual=np.int64(-3), [0.801, 0.199, 0.000, 0.000, 0.000, 0.000, 0.000], checks for var: 19
+83: expect=1, actual=np.int64(2), [0.000, 0.000, 0.000, 0.000, 0.284, 0.713, 0.003], checks for var: 20
+96: expect=-1, actual=np.int64(-2), [0.000, 0.996, 0.003, 0.000, 0.000, 0.000, 0.000], checks for var: 18
+108: expect=0, actual=np.int64(-1), [0.000, 0.000, 0.983, 0.017, 0.000, 0.000, 0.000], checks for var: 19
+109: expect=0, actual=np.int64(1), [0.000, 0.000, 0.000, 0.059, 0.929, 0.012, 0.000], checks for var: 18
+136: expect=1, actual=np.int64(2), [0.000, 0.000, 0.000, 0.000, 0.321, 0.679, 0.000], checks for var: 20
+181: expect=2, actual=np.int64(3), [0.000, 0.000, 0.000, 0.000, 0.000, 0.078, 0.922], checks for var: 20
+226: expect=-1, actual=np.int64(-2), [0.000, 0.662, 0.337, 0.001, 0.000, 0.000, 0.000], checks for var: 19
+242: expect=-1, actual=np.int64(0), [0.001, 0.002, 0.388, 0.559, 0.050, 0.000, 0.000], checks for var: 18
+244: expect=-1, actual=np.int64(0), [0.000, 0.000, 0.382, 0.618, 0.000, 0.000, 0.000], checks for var: 20
+248: expect=-3, actual=np.int64(-2), [0.090, 0.910, 0.000, 0.000, 0.000, 0.000, 0.000], checks for var: 18
+271: expect=-2, actual=np.int64(-3), [0.993, 0.007, 0.000, 0.000, 0.000, 0.000, 0.000], checks for var: 19
+312: expect=0, actual=np.int64(1), [0.000, 0.000, 0.000, 0.037, 0.958, 0.004, 0.000], checks for var: 18
+335: expect=1, actual=np.int64(-1), [0.000, 0.001, 0.998, 0.000, 0.001, 0.000, 0.000], checks for var: 19
+337: expect=1, actual=np.int64(-1), [0.001, 0.019, 0.937, 0.005, 0.039, 0.000, 0.000], checks for var: 19
+343: expect=0, actual=np.int64(1), [0.000, 0.000, 0.000, 0.007, 0.993, 0.000, 0.000], checks for var: 17
+387: expect=-2, actual=np.int64(-3), [0.919, 0.081, 0.000, 0.000, 0.000, 0.000, 0.000], checks for var: 19
+396: expect=1, actual=np.int64(0), [0.000, 0.000, 0.000, 0.994, 0.006, 0.000, 0.000], checks for var: 18
+435: expect=0, actual=np.int64(1), [0.000, 0.000, 0.000, 0.078, 0.857, 0.065, 0.000], checks for var: 16
+444: expect=-1, actual=np.int64(-2), [0.000, 0.909, 0.091, 0.000, 0.000, 0.000, 0.000], checks for var: 16
+469: expect=-1, actual=np.int64(-2), [0.017, 0.820, 0.163, 0.000, 0.000, 0.000, 0.000], checks for var: 19
+483: expect=0, actual=np.int64(-1), [0.000, 0.000, 1.000, 0.000, 0.000, 0.000, 0.000], checks for var: 18
+510: expect=1, actual=np.int64(2), [0.000, 0.000, 0.000, 0.046, 0.016, 0.935, 0.002], checks for var: 19
+Real number of measurements used = 8771
+Average number of incorrect coefficients = 29.0
+Difference array: [29]
+Average oracle calls used = 3099.0
+Timing information (per key) in ms
+---- conditional pmf computation 0
+---- LDPC decoder 77550.168084
+---- LDPC decoder during batches 81140.09554
+---- Base case handling (everything) 18555.984292
+---- Computation of marginals for base 301.473458
+---- Enumerating promising directions 59210.370305
+---- Total time spend in batches 264632.79625
+Number of correct oracle calls is 2688 out of 3099 leading to empirical accuracy 0.8674
+y_statistic=defaultdict(<class 'int'>, {1: 1357, 0: 846})

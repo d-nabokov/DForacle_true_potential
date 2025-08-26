@@ -1,0 +1,69 @@
+Setting QOS class to user-interactive
+Theory suggest that the minimum number of calls is 1674.1539623687893
+Kyber-oracle server ready on 127.0.0.1:3334, waiting for Rust…
+Rust oracle connected from ('127.0.0.1', 64525)
+rand_mask=b'~\xa4\x85\xff\xf3\xd5\xfd('
+masked_addr=b'~9&\\\xf2\xd5\xfd('
+target_addr=009da3a301000000
+lowest_message_bit=15
+key 0
+14: expect=0, actual=np.int64(-1), [0.000, 0.000, 0.933, 0.066, 0.000, 0.000, 0.000], checks for var: 15
+15: expect=-2, actual=np.int64(-1), [0.000, 0.010, 0.990, 0.000, 0.000, 0.000, 0.000], checks for var: 14
+32: expect=0, actual=np.int64(1), [0.000, 0.000, 0.000, 0.077, 0.921, 0.001, 0.000], checks for var: 15
+38: expect=1, actual=np.int64(2), [0.000, 0.000, 0.000, 0.000, 0.000, 0.999, 0.001], checks for var: 13
+41: expect=2, actual=np.int64(3), [0.000, 0.000, 0.000, 0.000, 0.002, 0.101, 0.897], checks for var: 18
+55: expect=2, actual=np.int64(3), [0.000, 0.000, 0.000, 0.000, 0.000, 0.002, 0.998], checks for var: 14
+96: expect=-1, actual=np.int64(0), [0.000, 0.000, 0.001, 0.999, 0.000, 0.000, 0.000], checks for var: 13
+119: expect=0, actual=np.int64(-1), [0.000, 0.001, 0.954, 0.045, 0.000, 0.000, 0.000], checks for var: 15
+139: expect=-1, actual=np.int64(-2), [0.000, 0.999, 0.001, 0.000, 0.000, 0.000, 0.000], checks for var: 15
+144: expect=1, actual=np.int64(2), [0.000, 0.000, 0.000, 0.000, 0.083, 0.914, 0.002], checks for var: 16
+162: expect=-3, actual=np.int64(-2), [0.010, 0.989, 0.001, 0.000, 0.000, 0.000, 0.000], checks for var: 19
+173: expect=2, actual=np.int64(3), [0.000, 0.000, 0.000, 0.000, 0.000, 0.023, 0.977], checks for var: 16
+199: expect=0, actual=np.int64(1), [0.000, 0.000, 0.000, 0.009, 0.983, 0.007, 0.001], checks for var: 16
+237: expect=-1, actual=np.int64(-2), [0.005, 0.975, 0.020, 0.000, 0.000, 0.000, 0.000], checks for var: 18
+239: expect=1, actual=np.int64(2), [0.000, 0.000, 0.000, 0.000, 0.000, 0.999, 0.001], checks for var: 15
+241: expect=-1, actual=np.int64(-2), [0.109, 0.757, 0.134, 0.000, 0.000, 0.000, 0.000], checks for var: 19
+243: expect=0, actual=np.int64(-1), [0.000, 0.062, 0.935, 0.003, 0.000, 0.000, 0.000], checks for var: 14
+273: expect=-1, actual=np.int64(-3), [1.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000], checks for var: 16
+279: expect=-2, actual=np.int64(-3), [0.912, 0.088, 0.000, 0.000, 0.000, 0.000, 0.000], checks for var: 18
+289: expect=2, actual=np.int64(3), [0.000, 0.000, 0.000, 0.000, 0.000, 0.156, 0.844], checks for var: 17
+297: expect=0, actual=np.int64(-1), [0.000, 0.001, 0.938, 0.061, 0.000, 0.000, 0.000], checks for var: 19
+302: expect=-2, actual=np.int64(-3), [0.833, 0.166, 0.000, 0.000, 0.000, 0.000, 0.000], checks for var: 15
+309: expect=-1, actual=np.int64(-2), [0.000, 0.850, 0.150, 0.001, 0.000, 0.000, 0.000], checks for var: 20
+314: expect=1, actual=np.int64(0), [0.000, 0.000, 0.000, 0.948, 0.049, 0.002, 0.000], checks for var: 16
+315: expect=-1, actual=np.int64(-2), [0.018, 0.982, 0.000, 0.000, 0.000, 0.000, 0.000], checks for var: 18
+316: expect=1, actual=np.int64(2), [0.000, 0.000, 0.000, 0.000, 0.207, 0.793, 0.000], checks for var: 15
+318: expect=-1, actual=np.int64(-2), [0.000, 0.925, 0.073, 0.002, 0.000, 0.000, 0.000], checks for var: 16
+319: expect=0, actual=np.int64(-1), [0.005, 0.030, 0.963, 0.002, 0.000, 0.000, 0.000], checks for var: 15
+325: expect=-2, actual=np.int64(-3), [0.965, 0.035, 0.000, 0.000, 0.000, 0.000, 0.000], checks for var: 18
+335: expect=-1, actual=np.int64(0), [0.000, 0.000, 0.025, 0.975, 0.000, 0.000, 0.000], checks for var: 15
+344: expect=2, actual=np.int64(3), [0.000, 0.000, 0.000, 0.000, 0.000, 0.002, 0.998], checks for var: 19
+380: expect=-1, actual=np.int64(-2), [0.015, 0.965, 0.019, 0.000, 0.000, 0.000, 0.000], checks for var: 15
+390: expect=1, actual=np.int64(2), [0.000, 0.000, 0.000, 0.000, 0.005, 0.969, 0.025], checks for var: 17
+405: expect=-1, actual=np.int64(0), [0.000, 0.019, 0.005, 0.975, 0.000, 0.000, 0.000], checks for var: 18
+414: expect=2, actual=np.int64(3), [0.000, 0.000, 0.000, 0.000, 0.000, 0.026, 0.973], checks for var: 16
+423: expect=3, actual=np.int64(2), [0.000, 0.000, 0.000, 0.000, 0.000, 0.992, 0.008], checks for var: 15
+432: expect=-1, actual=np.int64(-2), [0.017, 0.835, 0.147, 0.000, 0.000, 0.000, 0.000], checks for var: 14
+435: expect=0, actual=np.int64(1), [0.000, 0.002, 0.085, 0.016, 0.896, 0.000, 0.000], checks for var: 19
+439: expect=-1, actual=np.int64(0), [0.000, 0.000, 0.000, 0.999, 0.001, 0.000, 0.000], checks for var: 12
+462: expect=0, actual=np.int64(1), [0.000, 0.000, 0.000, 0.039, 0.958, 0.002, 0.000], checks for var: 17
+477: expect=2, actual=np.int64(3), [0.000, 0.000, 0.000, 0.000, 0.000, 0.163, 0.837], checks for var: 15
+481: expect=-3, actual=np.int64(-2), [0.003, 0.997, 0.000, 0.000, 0.000, 0.000, 0.000], checks for var: 18
+482: expect=0, actual=np.int64(-1), [0.000, 0.000, 1.000, 0.000, 0.000, 0.000, 0.000], checks for var: 18
+489: expect=-1, actual=np.int64(-2), [0.000, 1.000, 0.000, 0.000, 0.000, 0.000, 0.000], checks for var: 16
+496: expect=0, actual=np.int64(-1), [0.020, 0.046, 0.850, 0.084, 0.000, 0.000, 0.000], checks for var: 16
+500: expect=1, actual=np.int64(2), [0.000, 0.000, 0.000, 0.000, 0.128, 0.870, 0.001], checks for var: 15
+Real number of measurements used = 7072
+Average number of incorrect coefficients = 46.0
+Difference array: [46]
+Average oracle calls used = 2671.0
+Timing information (per key) in ms
+---- conditional pmf computation 0
+---- LDPC decoder 65156.875583
+---- LDPC decoder during batches 71873.958459
+---- Base case handling (everything) 15083.484792
+---- Computation of marginals for base 281.980953
+---- Enumerating promising directions 51846.023449
+---- Total time spend in batches 225608.573791
+Number of correct oracle calls is 2284 out of 2671 leading to empirical accuracy 0.8551
+y_statistic=defaultdict(<class 'int'>, {0: 548, 1: 1227})

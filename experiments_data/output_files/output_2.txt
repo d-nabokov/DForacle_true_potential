@@ -1,0 +1,39 @@
+Setting QOS class to user-interactive
+Theory suggest that the minimum number of calls is 1674.1539623687893
+Kyber-oracle server ready on 127.0.0.1:3334, waiting for Rust…
+Rust oracle connected from ('127.0.0.1', 62558)
+rand_mask=b'%\xa9t<\x8c\x19\x0e\r'
+masked_addr=b'%\x00\xdb\x9f\x8d\x19\x0e\r'
+target_addr=00a9afa301000000
+lowest_message_bit=15
+key 0
+133: expect=1, actual=np.int64(2), [0.000, 0.000, 0.000, 0.000, 0.007, 0.993, 0.000], checks for var: 18
+153: expect=0, actual=np.int64(-1), [0.000, 0.000, 0.590, 0.410, 0.000, 0.000, 0.000], checks for var: 20
+158: expect=-1, actual=np.int64(0), [0.000, 0.000, 0.443, 0.557, 0.000, 0.000, 0.000], checks for var: 20
+180: expect=3, actual=np.int64(2), [0.000, 0.000, 0.000, 0.000, 0.001, 0.999, 0.000], checks for var: 18
+200: expect=0, actual=np.int64(-1), [0.000, 0.000, 0.987, 0.013, 0.000, 0.000, 0.000], checks for var: 17
+216: expect=0, actual=np.int64(1), [0.000, 0.000, 0.003, 0.000, 0.997, 0.000, 0.000], checks for var: 16
+218: expect=1, actual=np.int64(2), [0.000, 0.000, 0.000, 0.000, 0.015, 0.985, 0.001], checks for var: 19
+227: expect=1, actual=np.int64(2), [0.000, 0.000, 0.000, 0.000, 0.000, 0.991, 0.008], checks for var: 18
+232: expect=0, actual=np.int64(-1), [0.000, 0.045, 0.898, 0.057, 0.000, 0.000, 0.000], checks for var: 20
+303: expect=1, actual=np.int64(2), [0.000, 0.000, 0.000, 0.000, 0.002, 0.932, 0.065], checks for var: 20
+341: expect=-1, actual=np.int64(-2), [0.001, 0.882, 0.117, 0.000, 0.000, 0.000, 0.000], checks for var: 18
+342: expect=-1, actual=np.int64(-2), [0.024, 0.852, 0.124, 0.000, 0.000, 0.000, 0.000], checks for var: 19
+363: expect=1, actual=np.int64(2), [0.000, 0.000, 0.000, 0.001, 0.013, 0.961, 0.025], checks for var: 19
+405: expect=0, actual=np.int64(-1), [0.000, 0.000, 0.932, 0.065, 0.002, 0.000, 0.000], checks for var: 15
+427: expect=1, actual=np.int64(2), [0.000, 0.000, 0.000, 0.000, 0.133, 0.866, 0.000], checks for var: 19
+465: expect=-2, actual=np.int64(-3), [0.568, 0.432, 0.000, 0.000, 0.000, 0.000, 0.000], checks for var: 20
+Real number of measurements used = 11126
+Average number of incorrect coefficients = 16.0
+Difference array: [16]
+Average oracle calls used = 3045.0
+Timing information (per key) in ms
+---- conditional pmf computation 0
+---- LDPC decoder 83965.90625
+---- LDPC decoder during batches 80556.288791
+---- Base case handling (everything) 19128.256959
+---- Computation of marginals for base 306.087916
+---- Enumerating promising directions 64274.95659
+---- Total time spend in batches 285527.302084
+Number of correct oracle calls is 2647 out of 3045 leading to empirical accuracy 0.8693
+y_statistic=defaultdict(<class 'int'>, {1: 1341, 0: 808})

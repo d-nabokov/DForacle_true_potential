@@ -1,0 +1,34 @@
+Setting QOS class to user-interactive
+Theory suggest that the minimum number of calls is 1674.1539623687893
+Kyber-oracle server ready on 127.0.0.1:3334, waiting for Rust…
+Rust oracle connected from ('127.0.0.1', 63083)
+rand_mask=b'\x04\x1b\x14:\xfb"\xc3C'
+masked_addr=b'\x04\xb6\xbc\x99\xfa"\xc3C'
+target_addr=00ada8a301000000
+lowest_message_bit=15
+key 0
+46: expect=-1, actual=np.int64(-2), [0.000, 0.663, 0.337, 0.000, 0.000, 0.000, 0.000], checks for var: 15
+59: expect=3, actual=np.int64(2), [0.000, 0.000, 0.000, 0.000, 0.000, 0.849, 0.150], checks for var: 19
+66: expect=-2, actual=np.int64(-3), [0.613, 0.387, 0.000, 0.000, 0.000, 0.000, 0.000], checks for var: 16
+118: expect=-1, actual=np.int64(0), [0.000, 0.000, 0.039, 0.960, 0.001, 0.000, 0.000], checks for var: 19
+149: expect=1, actual=np.int64(2), [0.000, 0.000, 0.000, 0.000, 0.000, 0.999, 0.001], checks for var: 16
+184: expect=0, actual=np.int64(-1), [0.000, 0.000, 0.691, 0.226, 0.082, 0.001, 0.000], checks for var: 15
+209: expect=-1, actual=np.int64(-2), [0.008, 0.878, 0.114, 0.000, 0.000, 0.000, 0.000], checks for var: 14
+251: expect=0, actual=np.int64(-1), [0.000, 0.001, 0.985, 0.013, 0.000, 0.000, 0.000], checks for var: 14
+254: expect=1, actual=np.int64(0), [0.000, 0.000, 0.001, 0.999, 0.000, 0.000, 0.000], checks for var: 11
+326: expect=2, actual=np.int64(3), [0.000, 0.000, 0.000, 0.000, 0.000, 0.138, 0.862], checks for var: 15
+380: expect=-1, actual=np.int64(-2), [0.000, 0.597, 0.403, 0.000, 0.000, 0.000, 0.000], checks for var: 16
+Real number of measurements used = 7320
+Average number of incorrect coefficients = 11.0
+Difference array: [11]
+Average oracle calls used = 2522.0
+Timing information (per key) in ms
+---- conditional pmf computation 0
+---- LDPC decoder 52860.39425
+---- LDPC decoder during batches 68229.288374
+---- Base case handling (everything) 18435.732
+---- Computation of marginals for base 287.999914
+---- Enumerating promising directions 45983.222963
+---- Total time spend in batches 202071.783
+Number of correct oracle calls is 2310 out of 2522 leading to empirical accuracy 0.9159
+y_statistic=defaultdict(<class 'int'>, {0: 696, 1: 930})
