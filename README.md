@@ -3,14 +3,14 @@ Prefetcher (DMP). The attack was tested on MacBook Air with Apple M1.
 
 ## Installation
 
-The code depends on the modified version of the SCA-LDPC framework available at https://github.com/d-nabokov/SCA-LDPC, which provides a belief propagation decoder working over joint distribution of few secret variables (instead of considering only the sum), plus more optimizations. Our code implicitly assumes that there is already set-up and compiled framework available at `../SCA-LDPC` path. 
+The code depends on the modified version of the SCA-LDPC framework available at https://anonymous.4open.science/r/SCA-LDPC-A43D, which provides a belief propagation decoder working over joint distribution of few secret variables (instead of considering only the sum), plus more optimizations. Our code implicitly assumes that there is already set-up and compiled framework available at `../SCA-LDPC` path. 
 
 Before running the code, make sure to run the following command to activate the virtual environment provided by SCA-LDPC framework
 ```
 source ../SCA-LDPC/python-virtualenv/bin/activate
 ```
 
-To run the attack on Apple M-series, the modified version of GoFetch repository is needed: https://github.com/d-nabokov/GoFetch. It provides updated `kyber_attacker` consistent with our Python logic. This repository could be installed at any location as the interaction uses sockets, follow the necessary instructions described in that repository's README file. 
+To run the attack on Apple M-series, the modified version of GoFetch repository is needed: https://anonymous.4open.science/status/GoFetch-681C. It provides updated `kyber_attacker` consistent with our Python logic. This repository could be installed at any location as the interaction uses sockets, follow the necessary instructions described in that repository's README file. 
 
 ## Experiments (Section 3)
 
