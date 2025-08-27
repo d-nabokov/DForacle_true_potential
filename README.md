@@ -36,7 +36,7 @@ python plot_result.py --save --prefix "kyber768" kyber768_100.txt --dist 2 4
 
 ### Generating the database
 
-In `database_10000_512` and `database_10000_768` we provide a database with 10000 random balanced full rotation encodings for Kyber512 and Kyber768, resp. In `kyber_ldpc.py` we explicitly list which encodings should be taken (and what additional nega-cyclic shift should be applied to each of them) for getting good multibit encoding. To generate this database and multibit encoding, run:
+In `database_10000_512` and `database_10000_768` we provide a database with 10000 random balanced full rotation encodings for Kyber512 and Kyber768, resp. In `kyber_ldpc.py` we explicitly list which encodings should be taken (and what additional nega-cyclic shift should be applied to each of them) for getting good multibit encoding. To generate a database like this together with a multibit encoding, run:
 ```
 python kyber_base_encoding.py
 ```
